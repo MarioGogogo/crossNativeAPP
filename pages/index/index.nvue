@@ -2,7 +2,7 @@
   <div class="container">
     <!-- 上半部分：WebView (固定高度) -->
     <div class="webview-container">
-      <webview
+      <UniWebView
         ref="webView"
         class="webview"
         :src="webUrl"
@@ -10,7 +10,8 @@
         @onpagefinish="onPageFinish"
         @onpageerror="onPageError"
         @onjsmessage="onJsMessage"
-      ></webview>
+        @onprogress="onProgress"
+      ></UniWebView>
     </div>
 
     <!-- 下半部分：控制按钮和日志 (可滚动) -->
@@ -71,15 +72,11 @@
           <text class="btn btn-small btn-warning" @click="clearLog">清空</text>
         </div>
         <div class="log-container">
-          <div
-            v-for="(log, index) in logs"
-            :key="index"
-            class="log-item"
-            :class="log.type"
-          >
+          <div v-for="(log, index) in logs" :key="index" class="log-item">
             <div class="log-row">
               <text class="log-time">{{ log.time }}</text>
-              <text class="log-msg">{{ log.msg }}</text>
+              <!-- nvue 不继承父元素 color，颜色类必须直接绑到 <text> 上 -->
+              <text class="log-msg" :class="log.type">{{ log.msg }}</text>
             </div>
           </div>
         </div>
@@ -89,11 +86,11 @@
 </template>
 
 <script>
-const dom = weex.requireModule("dom");
-
 export default {
   data() {
     return {
+      // 初始为空，在 onReady 中通过 plus.io 解析真实路径后赋值
+      // 不能直接写 /static/xxx，WebView 识别不了，必须是 file:// 开头的完整路径
       webUrl: "/static/plus-bridge-test.html",
       pageTitle: "",
       pageUrl: "",
@@ -133,19 +130,23 @@ export default {
       this.logs = [];
       this.addLog("系统", "日志已清空");
     },
-
+    onProgress(e) {
+      // res.progress 为 0 ~ 100 的整数
+      this.progress = e.detail.progress;
+      console.log("加载进度：" + e.detail.progress + "%");
+    },
     // WebView 事件
     onPageStart(res) {
-      this.addLog("系统", `页面开始加载：${res.url}`);
+      this.addLog("系统", `页面开始加载`);
       this.pageUrl = res.url;
     },
     onPageFinish(res) {
-      this.addLog("系统", `页面加载完成：${res.title}`);
+      this.addLog("系统", `页面加载完成`);
       this.pageTitle = res.title;
       this.progress = 100;
     },
     onPageError(res) {
-      this.addLog("错误", `页面加载失败：${res.description}`);
+      this.addLog("错误", `页面加载失败`);
     },
     onJsMessage(res) {
       this.addLog("H5", `收到消息：${JSON.stringify(res)}`);
@@ -391,7 +392,7 @@ export default {
 
 .log-container {
   width: 710rpx;
-  min-height: 400rpx;
+  height: 400rpx;
   background-color: #ffffff;
   border-radius: 8rpx;
   padding: 20rpx;
@@ -409,21 +410,26 @@ export default {
 
 .log-row {
   flex-direction: row;
-  width: 100%;
+  /* nvue 不支持百分比宽度，100%会被忽略导致宽度为 0；改用 flex:1 占满父容器 */
+  flex: 1;
 }
 
 .log-time {
-  font-size: 32rpx;
+  font-size: 24rpx;
   color: #64748b;
   width: 160rpx;
-  line-height: 1.5;
+  /* nvue 中 line-height 须为绝对单位，1.5 无效 */
+  line-height: 44rpx;
 }
 
 .log-msg {
-  height: 30px;
-  font-size: 24px;
+  flex: 1;
+  font-size: 28rpx;
   font-weight: 500;
-  line-height: 1;
+  /* 移除固定 height，避免截断；line-height 须为绝对单位 */
+  line-height: 44rpx;
+  /* 默认颜色兑底：防止动态颜色类未生效时文字隱形 */
+  color: #334155;
 }
 
 .log-info {

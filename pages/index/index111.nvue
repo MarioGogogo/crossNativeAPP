@@ -1,0 +1,53 @@
+<template>
+  <view class="container">
+    <!-- 上半部分：WebView (固定高度) -->
+      <UniWebView
+        ref="webView"
+        class="webview"
+        :src="webUrl"
+        @onpagestart="onPageStart"
+        @onpagefinish="onPageFinish"
+        @onpageerror="onPageError"
+        @onjsmessage="onJsMessage"
+      ></UniWebView>
+   </view>
+</template>
+
+<script>
+	export default {
+		data(){
+			return {
+				webUrl:"https://pms-pad.devops.foxhis.com"
+			}
+		},
+		  methods: {
+			  onPageStart(){
+				  
+			  },
+			  onPageFinish(){
+				  
+			  },
+			  onPageError(){
+				  
+			  },
+			  onJsMessage(){
+				  
+			  },
+			  
+		  }
+	}
+</script>
+
+<style>
+.container {
+  flex: 1;
+  flex-direction: column;
+  background-color: #f5f7fa;
+}
+
+.webview{
+  flex: 1;
+}
+
+
+</style>

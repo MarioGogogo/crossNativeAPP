@@ -88,36 +88,39 @@
     }
 
     #log {
-      font-size: 11px;
-      color: #475569;
-      line-height: 1.8;
-      max-height: 180px;
+      font-size: 12px;
+      line-height: 2;
+      max-height: 220px;
       overflow-y: auto;
-      background: #1e293b;
-      color: #e2e8f0;
-      padding: 10px;
+      background: #0f172a;
+      color: #f1f5f9;
+      padding: 12px;
       border-radius: 6px;
-      font-family: 'Courier New', monospace;
+      font-family: 'SF Mono', 'Menlo', 'Courier New', monospace;
+      -webkit-overflow-scrolling: touch;
     }
 
     .log-entry {
-      margin-bottom: 4px;
+      margin-bottom: 2px;
+      padding: 2px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     }
 
     .log-time {
-      color: #64748b;
+      color: #94a3b8;
     }
 
     .log-out {
-      color: #10b981;
+      color: #34d399;
     }
 
     .log-in {
-      color: #3b82f6;
+      color: #60a5fa;
     }
 
     .log-error {
-      color: #ef4444;
+      color: #f87171;
+      font-weight: 600;
     }
 
     input,
@@ -149,16 +152,17 @@
 
   <!-- 消息发送 -->
   <div class="card">
-    <h2>📤 发送消息到 WebView</h2>
+    <h2>📤 发送消息到原生</h2>
     <div class="btn-row">
-      <button onclick="sendPostMessage()">postMessage</button>
-      <button onclick="sendCallHandler()">callHandler</button>
-      <button onclick="sendLoginSuccess()">登录成功</button>
-      <button onclick="sendFormSubmit()">表单提交</button>
+      <button class="danger" onclick="sendCloseWebView()">退出 WebView</button>
+      <button class="warning" onclick="sendReload()">重新加载</button>
+      <button class="secondary" onclick="sendClearCache()">清除缓存</button>
+      <button onclick="sendGoBack()">返回上一页</button>
     </div>
     <div class="btn-row">
-      <button onclick="sendButtonClick()">按钮点击</button>
-      <button onclick="sendGetUserInfo()">获取用户信息</button>
+      <button class="success" onclick="sendOnLoad()">页面就绪</button>
+      <button onclick="sendGetDeviceInfo()">获取设备信息</button>
+      <button onclick="sendCustomMessage()">自定义消息</button>
     </div>
   </div>
 
@@ -261,62 +265,31 @@
       sendToApp({ type: 'ONLOAD', page: document.title, url: location.href });
     }
 
-    function sendPostMessage() {
-      // 使用 postMessage 发送消息
-      window.UniWebView.postMessage(JSON.stringify({
-        type: 'postMessage',
-        data: {
-          timestamp: new Date().toLocaleTimeString(),
-          random: Math.random()
-        }
-      }));
-      logOut('postMessage: 消息已发送');
+    function sendCloseWebView() {
+      sendToApp({ type: 'closeWebView' });
     }
 
-    function sendCallHandler() {
-      // 使用 callHandler 调用 uni-app 方法
-      window.UniWebView.callHandler('testMethod', JSON.stringify({
-        action: 'test',
-        value: Math.random()
-      }));
-      logOut('callHandler[testMethod]: 调用已发送');
+    function sendReload() {
+      sendToApp({ type: 'reload' });
     }
 
-    function sendLoginSuccess() {
-      sendToApp({
-        type: 'loginSuccess',
-        data: {
-          token: 'token_' + Date.now(),
-          userInfo: {
-            userId: '12345',
-            username: '测试用户',
-            email: 'test@example.com'
-          }
-        }
-      });
+    function sendClearCache() {
+      sendToApp({ type: 'clearCache' });
     }
 
-    function sendFormSubmit() {
-      sendToApp({
-        type: 'formSubmit',
-        data: {
-          username: '张三',
-          email: 'test@example.com',
-          phone: '13800138000'
-        }
-      });
+    function sendGoBack() {
+      sendToApp({ type: 'goBack' });
     }
 
-    function sendButtonClick() {
-      sendToApp({
-        type: 'buttonClick',
-        data: '按钮 ' + new Date().toLocaleTimeString()
-      });
+    function sendGetDeviceInfo() {
+      callUniAppHandler('getDeviceInfo', {});
     }
 
-    function sendGetUserInfo() {
-      // 使用 callHandler 获取用户信息
-      callUniAppHandler('getUserInfo', { userId: '12345' });
+    function sendCustomMessage() {
+      var msg = prompt('请输入要发送的消息内容：');
+      if (msg !== null && msg.trim() !== '') {
+        sendToApp({ type: 'custom', data: msg.trim() });
+      }
     }
 
     // ========== 页面加载初始化 ==========
