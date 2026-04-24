@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>WebView 通信测试</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 0;
+      background: #f5f7fa;
+    }
+
+    h1 {
+      font-size: 20px;
+      color: #1e293b;
+      margin-bottom: 12px;
+    }
+
+    h2 {
+      font-size: 16px;
+      color: #374151;
+      margin: 16px 0 8px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    button {
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      margin: 3px;
+      display: inline-block;
+    }
+
+    button:active {
+      opacity: 0.8;
+      transform: scale(0.98);
+    }
+
+    button.secondary {
+      background: #64748b;
+    }
+
+    button.success {
+      background: #10b981;
+    }
+
+    button.warning {
+      background: #f59e0b;
+    }
+
+    button.danger {
+      background: #ef4444;
+    }
+
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+
+    #log {
+      font-size: 11px;
+      color: #475569;
+      line-height: 1.8;
+      max-height: 180px;
+      overflow-y: auto;
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 10px;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+    }
+
+    .log-entry {
+      margin-bottom: 4px;
+    }
+
+    .log-time {
+      color: #64748b;
+    }
+
+    .log-out {
+      color: #10b981;
+    }
+
+    .log-in {
+      color: #3b82f6;
+    }
+
+    .log-error {
+      color: #ef4444;
+    }
+
+    input,
+    select {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 13px;
+      margin: 4px 0;
+    }
+
+    .form-group {
+      margin-bottom: 10px;
+    }
+
+    .form-label {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 4px;
+      display: block;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>WebView 通信测试</h1>
+
+  <!-- 消息发送 -->
+  <div class="card">
+    <h2>📤 发送消息到 WebView</h2>
+    <div class="btn-row">
+      <button onclick="sendPostMessage()">postMessage</button>
+      <button onclick="sendCallHandler()">callHandler</button>
+      <button onclick="sendLoginSuccess()">登录成功</button>
+      <button onclick="sendFormSubmit()">表单提交</button>
+    </div>
+    <div class="btn-row">
+      <button onclick="sendButtonClick()">按钮点击</button>
+      <button onclick="sendGetUserInfo()">获取用户信息</button>
+    </div>
+  </div>
+
+  <!-- 日志区域 -->
+  <div class="card">
+    <h2>📋 消息日志</h2>
+    <div id="log">等待消息...</div>
+    <div class="btn-row" style="margin-top: 8px;">
+      <button class="secondary" onclick="clearLog()">清空日志</button>
+    </div>
+  </div>
+
+  <script>
+    var logCount = 0;
+
+    // ========== 日志函数 ==========
+    function log(msg, type) {
+      var el = document.getElementById('log');
+      var time = new Date().toLocaleTimeString();
+      var className = '';
+      if (type === 'out') className = 'log-out';
+      else if (type === 'in') className = 'log-in';
+      else if (type === 'error') className = 'log-error';
+
+      var html = '<div class="log-entry">' +
+        '<span class="log-time">[' + time + ']</span> ' +
+        '<span class="' + className + '">' + msg + '</span>' +
+        '</div>' + el.innerHTML;
+
+      el.innerHTML = html;
+      logCount++;
+      if (logCount > 50) {
+        el.innerHTML = el.innerHTML.substring(0, el.innerHTML.lastIndexOf('<div class="log-entry">'));
+      }
+    }
+
+    function logOut(msg) { log('→ ' + msg, 'out'); }
+    function logIn(msg) { log('← ' + msg, 'in'); }
+    function logError(msg) { log('✕ ' + msg, 'error'); }
+
+    // ========== 接收 WebView 消息 ==========
+    // 定义全局函数供 uni-app 调用
+    function updatePageTitle(title) {
+      document.title = title;
+      return '标题已更新';
+    }
+    window.receiveFromUniApp = function (data) {
+      logIn('receiveFromUniApp: ' + JSON.stringify(data));
+      if (data.type === 'INIT_CONFIG') {
+        log('📡 初始化配置：ip=' + data.config.ip + ':' + data.config.port);
+      } else if (data.type === 'CACHE_RESULT') {
+        log('🧹 缓存结果：' + data.action + ' success=' + data.success);
+      } else if (data.type === 'SCAN_RESULT') {
+        if (data.error) {
+          logError('扫码失败：' + data.error);
+        } else {
+          log('📷 扫码结果：' + data.result + ' (类型：' + data.scanType + ')');
+        }
+      } else if (data.type === 'callHandlerCallback') {
+        log('📞 callHandler 回调 [' + data.handler + ']: ' + JSON.stringify(data.result));
+      } else if (data.userInfo) {
+        log('📞 callHandler 回调：getUserInfo = ' + JSON.stringify(data.userInfo));
+      }
+    };
+
+    // ========== 发送消息到 WebView (原生交互) ==========
+    function sendToApp(payload) {
+      var msgStr = typeof payload === 'string' ? payload : JSON.stringify(payload);
+      logOut(msgStr);
+
+      // 方式 1: UniWebView JS Bridge
+      if (window.UniWebView && typeof window.UniWebView.postMessage === 'function') {
+        window.UniWebView.postMessage(msgStr);
+        log('  → UniWebView.postMessage');
+        return;
+      }
+
+      // 方式 2: sendToUniApp 函数 (原生注入)
+      if (typeof window.sendToUniApp === 'function') {
+        window.sendToUniApp(msgStr);
+        log('  → sendToUniApp');
+        return;
+      }
+
+      logError('无法发送：WebView 通信接口不可用');
+    }
+
+    // 调用 WebView 方法
+    function callUniAppHandler(handlerName, params) {
+      var dataStr = typeof params === 'string' ? params : JSON.stringify(params);
+      logOut('callHandler[' + handlerName + ']: ' + dataStr);
+
+      if (window.UniWebView && typeof window.UniWebView.callHandler === 'function') {
+        window.UniWebView.callHandler(handlerName, dataStr);
+        log('  → UniWebView.callHandler');
+        return;
+      }
+
+      // 降级：通过 postMessage 模拟
+      if (window.UniWebView && typeof window.UniWebView.postMessage === 'function') {
+        window.UniWebView.postMessage(JSON.stringify({
+          type: 'callHandler',
+          handler: handlerName,
+          data: params
+        }));
+        log('  → postMessage 模拟');
+        return;
+      }
+
+      logError('无法调用：WebView 通信接口不可用');
+    }
+
+    // 业务发送函数
+    function sendOnLoad() {
+      sendToApp({ type: 'ONLOAD', page: document.title, url: location.href });
+    }
+
+    function sendPostMessage() {
+      // 使用 postMessage 发送消息
+      window.UniWebView.postMessage(JSON.stringify({
+        type: 'postMessage',
+        data: {
+          timestamp: new Date().toLocaleTimeString(),
+          random: Math.random()
+        }
+      }));
+      logOut('postMessage: 消息已发送');
+    }
+
+    function sendCallHandler() {
+      // 使用 callHandler 调用 uni-app 方法
+      window.UniWebView.callHandler('testMethod', JSON.stringify({
+        action: 'test',
+        value: Math.random()
+      }));
+      logOut('callHandler[testMethod]: 调用已发送');
+    }
+
+    function sendLoginSuccess() {
+      sendToApp({
+        type: 'loginSuccess',
+        data: {
+          token: 'token_' + Date.now(),
+          userInfo: {
+            userId: '12345',
+            username: '测试用户',
+            email: 'test@example.com'
+          }
+        }
+      });
+    }
+
+    function sendFormSubmit() {
+      sendToApp({
+        type: 'formSubmit',
+        data: {
+          username: '张三',
+          email: 'test@example.com',
+          phone: '13800138000'
+        }
+      });
+    }
+
+    function sendButtonClick() {
+      sendToApp({
+        type: 'buttonClick',
+        data: '按钮 ' + new Date().toLocaleTimeString()
+      });
+    }
+
+    function sendGetUserInfo() {
+      // 使用 callHandler 获取用户信息
+      callUniAppHandler('getUserInfo', { userId: '12345' });
+    }
+
+    // ========== 页面加载初始化 ==========
+    log('页面加载完成，可通过 sendToApp 或 callUniAppHandler 与 WebView 通信');
+
+    // 自动发送 ONLOAD 消息
+    sendOnLoad();
+
+    // 监听自定义事件
+    window.addEventListener('uniapp-message', function (e) {
+      logIn('uniapp-message 事件：' + JSON.stringify(e.detail));
+    });
+  </script>
+
+</body>
+
+</html>

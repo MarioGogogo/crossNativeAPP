@@ -1,0 +1,25 @@
+{
+	"name": "UniWebView",
+	"id": "uniplugin_webview",
+	"version": "1",
+	"description": "alert插件描述",
+	"_dp_type": "nativeplugin",
+	"_dp_nativeplugin": {
+		"android": {
+			"plugins": [{
+					"type": "component",
+					"name": "UniWebView",
+					"class": "uni.dcloud.io.uniplugin_webview.WebViewComponent"
+				},
+				{
+					"type": "module",
+					"name": "UniWebViewModule",
+					"class": "uni.dcloud.io.uniplugin_webview.WebViewModule"
+				}
+			],
+			"minSdkVersion": "22",
+			"integrateType": "aar",
+			"dependencies": []
+		}
+	}
+}

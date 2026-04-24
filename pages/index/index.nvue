@@ -1,0 +1,445 @@
+<template>
+  <div class="container">
+    <!-- 上半部分：WebView (固定高度) -->
+    <div class="webview-container">
+      <webview
+        ref="webView"
+        class="webview"
+        :src="webUrl"
+        @onpagestart="onPageStart"
+        @onpagefinish="onPageFinish"
+        @onpageerror="onPageError"
+        @onjsmessage="onJsMessage"
+      ></webview>
+    </div>
+
+    <!-- 下半部分：控制按钮和日志 (可滚动) -->
+    <scroller class="control-panel" show-scrollbar="true">
+      <!-- 页面控制 -->
+      <div class="section">
+        <text class="section-title">页面控制</text>
+        <div class="btn-row">
+          <text class="btn btn-primary" @click="reload">刷新页面</text>
+          <text class="btn btn-secondary" @click="goBack">返回</text>
+          <text class="btn btn-secondary" @click="goForward">前进</text>
+        </div>
+      </div>
+
+      <!-- WebView 属性 -->
+      <div class="section">
+        <text class="section-title">获取属性</text>
+        <div class="btn-row">
+          <text class="btn btn-info" @click="getPageTitle">获取页面标题</text>
+          <text class="btn btn-info" @click="getPageUrl">获取当前 URL</text>
+          <text class="btn btn-info" @click="getProgress">获取加载进度</text>
+        </div>
+        <div class="info-box">
+          <text class="info-label">标题：</text>
+          <text class="info-value">{{ pageTitle || "-" }}</text>
+        </div>
+        <div class="info-box">
+          <text class="info-label">URL：</text>
+          <text class="info-value">{{ pageUrl || "-" }}</text>
+        </div>
+        <div class="info-box">
+          <text class="info-label">进度：</text>
+          <text class="info-value">{{ progress }}%</text>
+        </div>
+      </div>
+
+      <!-- H5 通信 -->
+      <div class="section">
+        <text class="section-title">H5 通信</text>
+        <div class="btn-row">
+          <text class="btn btn-success" @click="sendToH5">发送数据到 H5</text>
+          <text class="btn btn-success" @click="callH5Method"
+            >调用 H5 方法</text
+          >
+        </div>
+        <div class="input-group">
+          <text class="input" @click="focusInput">{{
+            sendData || "输入要发送的数据"
+          }}</text>
+          <input class="hidden-input" v-model="sendData" />
+        </div>
+      </div>
+
+      <!-- 日志区域 -->
+      <div class="section">
+        <div class="section-header">
+          <text class="section-title">日志</text>
+          <text class="btn btn-small btn-warning" @click="clearLog">清空</text>
+        </div>
+        <div class="log-container">
+          <div
+            v-for="(log, index) in logs"
+            :key="index"
+            class="log-item"
+            :class="log.type"
+          >
+            <div class="log-row">
+              <text class="log-time">{{ log.time }}</text>
+              <text class="log-msg">{{ log.msg }}</text>
+            </div>
+          </div>
+        </div>
+      </div>
+    </scroller>
+  </div>
+</template>
+
+<script>
+const dom = weex.requireModule("dom");
+
+export default {
+  data() {
+    return {
+      webUrl: "/static/plus-bridge-test.html",
+      pageTitle: "",
+      pageUrl: "",
+      progress: 0,
+      sendData: "",
+      logs: [],
+    };
+  },
+  onReady() {
+    this.addLog("系统", "页面已就绪");
+  },
+  methods: {
+    focusInput() {
+      // 点击时聚焦到隐藏的 input
+    },
+
+    // 日志方法
+    addLog(type, msg) {
+      const time = new Date().toLocaleTimeString();
+      this.logs.unshift({
+        type: this.getLogType(type),
+        time,
+        msg: `[${type}] ${msg}`,
+      });
+      if (this.logs.length > 50) {
+        this.logs.pop();
+      }
+    },
+    getLogType(type) {
+      if (type === "系统") return "log-info";
+      if (type === "H5") return "log-out";
+      if (type === "Native") return "log-in";
+      if (type === "错误") return "log-error";
+      return "log-info";
+    },
+    clearLog() {
+      this.logs = [];
+      this.addLog("系统", "日志已清空");
+    },
+
+    // WebView 事件
+    onPageStart(res) {
+      this.addLog("系统", `页面开始加载：${res.url}`);
+      this.pageUrl = res.url;
+    },
+    onPageFinish(res) {
+      this.addLog("系统", `页面加载完成：${res.title}`);
+      this.pageTitle = res.title;
+      this.progress = 100;
+    },
+    onPageError(res) {
+      this.addLog("错误", `页面加载失败：${res.description}`);
+    },
+    onJsMessage(res) {
+      this.addLog("H5", `收到消息：${JSON.stringify(res)}`);
+
+      if (res.handler === "updateUserInfo") {
+        this.addLog("H5", `调用 updateUserInfo: ${JSON.stringify(res.data)}`);
+      }
+      if (res.handler === "testMethod") {
+        this.addLog("H5", `调用 testMethod: ${JSON.stringify(res.data)}`);
+      }
+      if (res.handler === "getUserInfo") {
+        this.addLog("H5", `请求 getUserInfo: ${JSON.stringify(res.data)}`);
+        this.sendToH5({
+          type: "userInfo",
+          data: {
+            userId: "12345",
+            username: "测试用户",
+            email: "test@example.com",
+          },
+        });
+      }
+    },
+
+    // 页面控制
+    reload() {
+      const webview = this.$refs.webView;
+      if (webview && webview.reload) {
+        webview.reload();
+      }
+      this.addLog("系统", "刷新页面");
+    },
+    goBack() {
+      const webview = this.$refs.webView;
+      if (webview && webview.goBack) {
+        webview.goBack();
+      }
+      this.addLog("系统", "返回");
+    },
+    goForward() {
+      const webview = this.$refs.webView;
+      if (webview && webview.goForward) {
+        webview.goForward();
+      }
+      this.addLog("系统", "前进");
+    },
+
+    // 获取属性
+    getPageTitle() {
+      const webview = this.$refs.webView;
+      if (webview && webview.evaluateJavascript) {
+        webview.evaluateJavascript("document.title", (res) => {
+          this.pageTitle = res.result;
+          this.addLog("系统", `获取标题：${res.result}`);
+        });
+      }
+    },
+    getPageUrl() {
+      const webview = this.$refs.webView;
+      if (webview && webview.evaluateJavascript) {
+        webview.evaluateJavascript("location.href", (res) => {
+          this.pageUrl = res.result;
+          this.addLog("系统", `获取 URL: ${res.result}`);
+        });
+      }
+    },
+    getProgress() {
+      this.addLog("系统", `当前进度：${this.progress}%`);
+    },
+
+    // H5 通信
+    sendToH5(data) {
+      const payload = data || {
+        type: "nativeMessage",
+        data: this.sendData || "Hello from Native",
+        timestamp: new Date().toLocaleTimeString(),
+      };
+      const webview = this.$refs.webView;
+      if (webview && webview.evaluateJavascript) {
+        webview.evaluateJavascript(
+          `window.receiveFromUniApp(${JSON.stringify(payload)})`
+        );
+      }
+      this.addLog("Native", `发送数据：${JSON.stringify(payload)}`);
+    },
+    callH5Method() {
+      const methodName = "updatePageTitle";
+      const param = `来自 Native 的标题 - ${new Date().toLocaleTimeString()}`;
+      const webview = this.$refs.webView;
+      if (webview && webview.evaluateJavascript) {
+        webview.evaluateJavascript(`${methodName}('${param}')`, (res) => {
+          this.addLog("Native", `调用结果：${JSON.stringify(res)}`);
+        });
+      }
+      this.addLog("Native", `调用 H5 方法：${methodName}`);
+    },
+  },
+};
+</script>
+
+<style scoped>
+.container {
+  flex: 1;
+  flex-direction: column;
+  background-color: #f5f7fa;
+  width: 750rpx;
+  height: 100%;
+}
+
+.webview-container {
+  width: 750rpx;
+  height: 700rpx;
+  background-color: #ffffff;
+}
+
+.webview {
+  width: 750rpx;
+  height: 700rpx;
+}
+
+.control-panel {
+  flex: 1;
+  padding: 20rpx;
+  background-color: #f5f7fa;
+}
+
+.section {
+  background-color: #ffffff;
+  border-radius: 12rpx;
+  padding: 20rpx;
+  margin-bottom: 20rpx;
+}
+
+.section-header {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+
+.section-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #1e293b;
+  margin-bottom: 16rpx;
+}
+
+.btn-row {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding-left: 24rpx;
+  padding-right: 24rpx;
+  padding-top: 16rpx;
+  padding-bottom: 16rpx;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+  margin-right: 16rpx;
+  margin-bottom: 12rpx;
+  text-align: center;
+}
+
+.btn-small {
+  padding-left: 16rpx;
+  padding-right: 16rpx;
+  padding-top: 8rpx;
+  padding-bottom: 8rpx;
+  font-size: 22rpx;
+}
+
+.btn-primary {
+  background-color: #3b82f6;
+  color: #ffffff;
+}
+
+.btn-secondary {
+  background-color: #64748b;
+  color: #ffffff;
+}
+
+.btn-info {
+  background-color: #0ea5e9;
+  color: #ffffff;
+}
+
+.btn-success {
+  background-color: #10b981;
+  color: #ffffff;
+}
+
+.btn-warning {
+  background-color: #f59e0b;
+  color: #ffffff;
+}
+
+.info-box {
+  flex-direction: row;
+  padding-top: 12rpx;
+  padding-bottom: 12rpx;
+  border-bottom-width: 1rpx;
+  border-bottom-color: #e2e8f0;
+}
+
+.info-label {
+  font-size: 24rpx;
+  color: #64748b;
+  width: 140rpx;
+}
+
+.info-value {
+  font-size: 24rpx;
+  color: #1e293b;
+  flex: 1;
+}
+
+.input-group {
+  margin-top: 16rpx;
+  position: relative;
+}
+
+.input {
+  background-color: #f1f5f9;
+  border-width: 1rpx;
+  border-color: #e2e8f0;
+  border-radius: 8rpx;
+  padding-left: 16rpx;
+  padding-right: 16rpx;
+  padding-top: 16rpx;
+  padding-bottom: 16rpx;
+  font-size: 24rpx;
+  color: #94a3b8;
+}
+
+.hidden-input {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+}
+
+.log-container {
+  width: 710rpx;
+  min-height: 400rpx;
+  background-color: #ffffff;
+  border-radius: 8rpx;
+  padding: 20rpx;
+  border-width: 1rpx;
+  border-color: #e2e8f0;
+}
+
+.log-item {
+  flex-direction: column;
+  padding-top: 12rpx;
+  padding-bottom: 12rpx;
+  border-bottom-width: 1rpx;
+  border-bottom-color: #e2e8f0;
+}
+
+.log-row {
+  flex-direction: row;
+  width: 100%;
+}
+
+.log-time {
+  font-size: 32rpx;
+  color: #64748b;
+  width: 160rpx;
+  line-height: 1.5;
+}
+
+.log-msg {
+  height: 30px;
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.log-info {
+  color: #334155;
+}
+
+.log-out {
+  color: #059669;
+}
+
+.log-in {
+  color: #2563eb;
+}
+
+.log-error {
+  color: #dc2626;
+  font-weight: bold;
+}
+</style>
