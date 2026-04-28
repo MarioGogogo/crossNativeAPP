@@ -2,7 +2,7 @@
 	"name": "UniWebView",
 	"id": "uniplugin_webview",
 	"version": "1",
-	"description": "alert插件描述",
+	"description": "原生webview插件描述",
 	"_dp_type": "nativeplugin",
 	"_dp_nativeplugin": {
 		"android": {
@@ -15,6 +15,21 @@
 					"type": "module",
 					"name": "UniWebViewModule",
 					"class": "uni.dcloud.io.uniplugin_webview.WebViewModule"
+				},
+				{
+					"type": "component",
+					"name": "X5WebView",
+					"class": "uni.dcloud.io.uniplugin_webview.X5WebViewComponent"
+				},
+				{
+					"type": "module",
+					"name": "X5WebViewModule",
+					"class": "uni.dcloud.io.uniplugin_webview.X5WebViewModule"
+				},
+				{
+					"type": "module",
+					"name": "X5LocalInstallModule",
+					"class": "uni.dcloud.io.uniplugin_webview.X5LocalInstallModule"
 				}
 			],
 			"minSdkVersion": "22",

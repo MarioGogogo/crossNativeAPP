@@ -18,14 +18,14 @@
     html,
     body {
       width: 100%;
-      height: 100%;
-      overflow: hidden;
+      min-height: 100%;
     }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      padding: 0;
+      padding: 12px;
       background: #f5f7fa;
+      -webkit-overflow-scrolling: touch;
     }
 
     h1 {
@@ -143,12 +143,71 @@
       margin-bottom: 4px;
       display: block;
     }
+
+    .file-upload {
+      position: relative;
+      display: inline-block;
+      overflow: hidden;
+    }
+
+    .file-upload input[type="file"] {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+      z-index: 2;
+    }
+
+    .file-upload .upload-btn {
+      background: #8b5cf6;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: opacity 0.2s, transform 0.1s;
+      position: relative;
+      z-index: 1;
+    }
+
+    .file-upload .upload-btn:active {
+      opacity: 0.8;
+      transform: scale(0.98);
+    }
+
+    .file-upload .upload-btn svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+    }
   </style>
 </head>
 
 <body>
 
   <h1>WebView 通信测试</h1>
+
+  <!-- 文件选择 -->
+  <div class="card">
+    <h2>📁 文件选择</h2>
+    <div class="form-group">
+      <label class="file-upload">
+        <input type="file" id="fileInput" onchange="handleFileSelect(event)" />
+        <span class="upload-btn">
+          <svg viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>
+          选择文件
+        </span>
+      </label>
+    </div>
+    <div id="file-info" style="font-size:12px;color:#374151;line-height:1.8;"></div>
+  </div>
 
   <!-- 消息发送 -->
   <div class="card">
@@ -166,6 +225,17 @@
     </div>
   </div>
 
+  <!-- X5 内核信息 -->
+  <div class="card">
+    <h2>🌐 X5 内核信息</h2>
+    <div class="btn-row">
+      <button class="success" onclick="getX5Info()">获取 X5 版本</button>
+    </div>
+    <div id="x5-info" style="font-size:12px;color:#374151;line-height:1.8;padding:8px 0;">
+      点击按钮获取 X5 内核信息
+    </div>
+  </div>
+
   <!-- 日志区域 -->
   <div class="card">
     <h2>📋 消息日志</h2>
@@ -174,8 +244,13 @@
       <button class="secondary" onclick="clearLog()">清空日志</button>
     </div>
   </div>
-
+  <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
   <script>
+    // VConsole 默认会挂载到 `window.VConsole` 上
+    var vConsole = new window.VConsole();
+  </script>
+  <script>
+
     var logCount = 0;
 
     // ========== 日志函数 ==========
@@ -204,9 +279,9 @@
     function logError(msg) { log('✕ ' + msg, 'error'); }
 
     // ========== 接收 WebView 消息 ==========
-    window.updatePageTitle = function(title) {
+    window.updatePageTitle = function (title) {
       document.title = title;
-	   logIn('uniapp调用h5的方法: ' + JSON.stringify(title));
+      logIn('uniapp调用h5的方法: ' + JSON.stringify(title));
       return '标题已更新';
     };
     window.receiveFromUniApp = function (data) {
@@ -289,6 +364,74 @@
       var msg = prompt('请输入要发送的消息内容：');
       if (msg !== null && msg.trim() !== '') {
         sendToApp({ type: 'custom', data: msg.trim() });
+      }
+    }
+
+    // ========== 文件选择 ==========
+    function handleFileSelect(event) {
+      var file = event.target.files[0];
+      var infoEl = document.getElementById('file-info');
+
+      if (!file) {
+        infoEl.innerHTML = '';
+        return;
+      }
+
+      var sizeStr = file.size < 1024 ? file.size + ' B' :
+        file.size < 1024 * 1024 ? (file.size / 1024).toFixed(2) + ' KB' :
+        (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+
+      infoEl.innerHTML =
+        '文件名：' + file.name + '<br>' +
+        '类型：' + (file.type || '未知') + '<br>' +
+        '大小：' + sizeStr;
+
+      logIn('选择文件：' + file.name + ' (' + sizeStr + ')');
+
+      // 读取为 Base64 并发送
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        var base64 = e.target.result.split(',')[1];
+        sendToApp({
+          type: 'fileSelected',
+          data: {
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            base64: base64
+          }
+        });
+        logOut('文件 Base64 已发送（长度：' + base64.length + '）');
+      };
+      reader.onerror = function () {
+        logError('文件读取失败');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // ========== X5 内核信息 ==========
+    function getX5Info() {
+      var infoEl = document.getElementById('x5-info');
+      try {
+        if (!window.UniWebView || typeof window.UniWebView.getX5Version !== 'function') {
+          infoEl.innerHTML = '<span style="color:#ef4444;">UniWebView.getX5Version 接口不可用</span>';
+          logError('UniWebView.getX5Version 接口不可用');
+          return;
+        }
+
+        // 同步获取 X5 版本信息
+        var x5Info = JSON.parse(window.UniWebView.getX5Version());
+
+        var html =
+          '是否使用 X5 内核：<b style="color:' + (x5Info.isX5 ? '#10b981' : '#ef4444') + ';">' + x5Info.isX5 + '</b><br>' +
+          'X5 版本号 (version)：<b>' + x5Info.version + '</b><br>' +
+          'SDK 版本号 (sdkVersion)：<b>' + x5Info.sdkVersion + '</b><br>' +
+          '是否支持视频播放：<b>' + x5Info.canSupportVideo + '</b>';
+        infoEl.innerHTML = html;
+        logIn('X5 内核信息：' + JSON.stringify(x5Info));
+      } catch (e) {
+        infoEl.innerHTML = '<span style="color:#ef4444;">获取失败：' + e.message + '</span>';
+        logError('getX5Version 异常：' + e.message);
       }
     }
 

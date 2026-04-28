@@ -2,7 +2,7 @@
   <div class="container">
     <!-- 上半部分：WebView (固定高度) -->
     <div class="webview-container">
-      <UniWebView
+      <X5WebView
         ref="webView"
         class="webview"
         :src="webUrl"
@@ -11,7 +11,7 @@
         @onpageerror="onPageError"
         @onjsmessage="onJsMessage"
         @onprogress="onProgress"
-      ></UniWebView>
+      ></X5WebView>
     </div>
 
     <!-- 下半部分：控制按钮和日志 (可滚动) -->
@@ -86,6 +86,7 @@
 </template>
 
 <script>
+// const x5Local = uni.requireNativePlugin("X5LocalInstallModule");
 export default {
   data() {
     return {
@@ -101,6 +102,20 @@ export default {
   },
   onReady() {
     this.addLog("系统", "页面已就绪");
+    // x5Local.installX5Core({}, (res) => {
+    //   if (res.success) {
+    //     if (res.message.includes("安装中")) {
+    //       // 进度回调：{ elapsedSeconds: 5, currentVersion: 0 }
+    //       console.log("已等待 " + res.elapsedSeconds + " 秒");
+    //     } else {
+    //       // 安装成功，会弹窗提示重启
+    //       console.log("安装成功，版本号：" + res.version);
+    //     }
+    //   } else {
+    //     // 安装失败
+    //     console.error(res.message);
+    //   }
+    // });
   },
   methods: {
     focusInput() {

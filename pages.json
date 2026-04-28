@@ -3,8 +3,9 @@
 		{
 			"path": "pages/index/index",
 			"style": {
-				"navigationBarTitleText": "webview"
-				}
+				"navigationStyle": "custom",
+				"navigationBarTitleText": ""
+			}
 		}
 	],
 	"globalStyle": {
