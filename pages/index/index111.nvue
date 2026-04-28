@@ -17,7 +17,7 @@
 	export default {
 		data(){
 			return {
-				webUrl:"https://pms-pad.devops.foxhis.com"
+				webUrl:"/static/plus-bridge-test.html"
 			}
 		},
 		  methods: {

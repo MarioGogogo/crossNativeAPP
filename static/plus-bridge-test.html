@@ -88,38 +88,48 @@
     }
 
     #log {
-      font-size: 12px;
-      line-height: 2;
-      max-height: 220px;
+      font-size: 15px;
+      line-height: 1.8;
+      max-height: 260px;
       overflow-y: auto;
-      background: #0f172a;
-      color: #f1f5f9;
-      padding: 12px;
-      border-radius: 6px;
+      background: #ffffff;
+      color: #1e293b;
+      padding: 14px;
+      border-radius: 8px;
       font-family: 'SF Mono', 'Menlo', 'Courier New', monospace;
       -webkit-overflow-scrolling: touch;
+      border: 1px solid #e2e8f0;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04);
     }
 
     .log-entry {
-      margin-bottom: 2px;
-      padding: 2px 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      margin-bottom: 6px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      background: #f8fafc;
+      border-left: 3px solid #cbd5e1;
+    }
+
+    .log-entry:last-child {
+      margin-bottom: 0;
     }
 
     .log-time {
-      color: #94a3b8;
+      color: #64748b;
+      font-size: 13px;
+      margin-right: 4px;
     }
 
     .log-out {
-      color: #34d399;
+      color: #059669;
     }
 
     .log-in {
-      color: #60a5fa;
+      color: #2563eb;
     }
 
     .log-error {
-      color: #f87171;
+      color: #dc2626;
       font-weight: 600;
     }
 
@@ -277,6 +287,12 @@
     function logOut(msg) { log('→ ' + msg, 'out'); }
     function logIn(msg) { log('← ' + msg, 'in'); }
     function logError(msg) { log('✕ ' + msg, 'error'); }
+
+    function clearLog() {
+      var el = document.getElementById('log');
+      el.innerHTML = '等待消息...';
+      logCount = 0;
+    }
 
     // ========== 接收 WebView 消息 ==========
     window.updatePageTitle = function (title) {

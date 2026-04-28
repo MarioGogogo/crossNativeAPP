@@ -1,10 +1,28 @@
 {
 	"pages": [ //pages数组中第一项表示应用启动页，参考：https://uniapp.dcloud.io/collocation/pages
 		{
+			"path": "pages/start/start",
+			"style": {
+				"navigationBarTitleText": "启动页"
+			}
+		},
+		{
 			"path": "pages/index/index",
 			"style": {
 				"navigationStyle": "custom",
 				"navigationBarTitleText": ""
+			}
+		},
+		{
+			"path": "pages/webview/native-webview",
+			"style": {
+				"navigationBarTitleText": "原生 WebView"
+			}
+		},
+		{
+			"path": "pages/webview/x5-webview",
+			"style": {
+				"navigationBarTitleText": "X5 WebView"
 			}
 		}
 	],

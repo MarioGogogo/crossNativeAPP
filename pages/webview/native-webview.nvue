@@ -1,0 +1,86 @@
+<template>
+  <view class="container">
+    <!-- 上半部分：WebView (固定高度) -->
+    <UniWebView
+      ref="webView"
+      class="webview"
+      :src="webUrl"
+      @onpagestart="onPageStart"
+      @onpagefinish="onPageFinish"
+      @onpageerror="onPageError"
+      @onjsmessage="onJsMessage"
+    ></UniWebView>
+  </view>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      webUrl: "/static/plus-bridge-test.html",
+      cachedPayload: null,
+    };
+  },
+  methods: {
+    addLog(data) {
+      console.log(data);
+    },
+    // WebView 事件
+    onPageStart(res) {
+      this.addLog(`页面开始加载`);
+    },
+    onPageFinish(res) {
+      this.addLog(`页面加载完成`);
+    },
+    onPageError(res) {
+      this.addLog(`页面加载失败`);
+    },
+    onJsMessage(e) {
+      console.log("H5", `收到消息：${JSON.stringify(e.detail)}`);
+      const data = e.detail?.data?.[0] || e.detail;
+
+      if (!data?.type) return;
+
+      if (data.type === "closeWebView") {
+        this.addLog("H5", `调用 closeWebView: ${JSON.stringify(data)}`);
+        uni.navigateBack();
+      }
+      if (data.type === "clearCache") {
+        this.addLog("H5", `调用 clearCache: ${JSON.stringify(data)}`);
+        this.$refs.webView.clearCache();
+      }
+      if (data.type === "ONLOAD") {
+        this.addLog("H5", `evaluateJavascript`);
+        this.cachedPayload = {
+          type: "userInfo",
+          data: {
+            userId: "12345",
+            username: "测试用户",
+            email: "test@example.com",
+          },
+        };
+        const payloadStr = JSON.stringify(this.cachedPayload);
+        const webview = this.$refs.webView;
+        console.log("webview", webview);
+        if (webview && webview.evaluateJavascript) {
+          webview.evaluateJavascript(
+            `localStorage.setItem('uniapp_payload', '${payloadStr}');`
+          );
+        }
+      }
+    },
+  },
+};
+</script>
+
+<style>
+.container {
+  flex: 1;
+  flex-direction: column;
+  background-color: #f5f7fa;
+}
+
+.webview {
+  flex: 1;
+}
+</style>
