@@ -2,11 +2,12 @@
 	"name": "UniWebView",
 	"id": "uniplugin_webview",
 	"version": "1",
-	"description": "原生webview插件描述",
+	"description": "原生webview插件描述,安卓和ios共用",
 	"_dp_type": "nativeplugin",
 	"_dp_nativeplugin": {
 		"android": {
-			"plugins": [{
+			"plugins": [
+				{
 					"type": "component",
 					"name": "UniWebView",
 					"class": "uni.dcloud.io.uniplugin_webview.WebViewComponent"
@@ -35,6 +36,18 @@
 			"minSdkVersion": "22",
 			"integrateType": "aar",
 			"dependencies": []
+		},
+		"ios": {
+			"plugins": [
+				{
+					"type": "component",
+					"name": "UniWebView",
+					"class": "UniWebViewComponent"
+				}
+			],
+			"frameworks": [],
+			"integrateType": "framework",
+			"deploymentTarget": "15.0"
 		}
 	}
 }

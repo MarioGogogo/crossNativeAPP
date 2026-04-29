@@ -58,10 +58,11 @@
           >
         </div>
         <div class="input-group">
-          <text class="input" @click="focusInput">{{
-            sendData || "输入要发送的数据"
-          }}</text>
-          <input class="hidden-input" v-model="sendData" />
+          <input
+            class="input"
+            v-model="sendData"
+            placeholder="输入要发送的数据"
+          />
         </div>
       </div>
 
@@ -89,8 +90,6 @@
 export default {
   data() {
     return {
-      // 初始为空，在 onReady 中通过 plus.io 解析真实路径后赋值
-      // 不能直接写 /static/xxx，WebView 识别不了，必须是 file:// 开头的完整路径
       webUrl: "/static/plus-bridge-test.html",
       pageTitle: "",
       pageUrl: "",
@@ -104,13 +103,10 @@ export default {
     this.addLog("系统", "页面已就绪");
   },
   methods: {
-    focusInput() {
-      // 点击时聚焦到隐藏的 input
-    },
-
     // 日志方法
     addLog(type, msg) {
-      const time = new Date().toLocaleTimeString();
+      const now = new Date();
+      const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
       this.logs.unshift({
         type: this.getLogType(type),
         time,
@@ -232,7 +228,7 @@ export default {
 
     // H5 通信
     sendToH5(data) {
-      const payload = data || {
+      const payload = {
         type: "nativeMessage",
         data: this.sendData || "Hello from Native",
         timestamp: new Date().toLocaleTimeString(),
@@ -243,7 +239,8 @@ export default {
           `window.receiveFromUniApp(${JSON.stringify(payload)})`
         );
       }
-      this.addLog("Native", `发送数据：${JSON.stringify(payload)}`);
+      this.addLog("Native", `发送数据：${JSON.stringify(payload.data)}`);
+      this.sendData = "";
     },
     callH5Method() {
       const methodName = "updatePageTitle";
@@ -255,6 +252,7 @@ export default {
         });
       }
       this.addLog("Native", `调用 H5 方法：${methodName}`);
+      this.sendData = "";
     },
   },
 };
@@ -271,13 +269,13 @@ export default {
 
 .webview-container {
   width: 750rpx;
-  height: 700rpx;
+  height: 800rpx;
   background-color: #ffffff;
 }
 
 .webview {
   width: 750rpx;
-  height: 700rpx;
+  height: 800rpx;
 }
 
 .control-panel {
@@ -379,6 +377,7 @@ export default {
 
 .input-group {
   margin-top: 16rpx;
+
   position: relative;
 }
 
@@ -389,10 +388,9 @@ export default {
   border-radius: 8rpx;
   padding-left: 16rpx;
   padding-right: 16rpx;
-  padding-top: 16rpx;
-  padding-bottom: 16rpx;
+  height: 72rpx;
   font-size: 24rpx;
-  color: #94a3b8;
+  color: #1e293b;
 }
 
 .hidden-input {

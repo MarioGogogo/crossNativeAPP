@@ -54,8 +54,8 @@
             "uniplugin_webview" : {
                 "__plugin_info__" : {
                     "name" : "UniWebView",
-                    "description" : "alert插件描述",
-                    "platforms" : "Android",
+                    "description" : "原生webview插件描述,安卓和ios共用",
+                    "platforms" : "Android,iOS",
                     "url" : "",
                     "android_package_name" : "",
                     "ios_bundle_id" : "",

@@ -211,12 +211,78 @@
       <label class="file-upload">
         <input type="file" id="fileInput" onchange="handleFileSelect(event)" />
         <span class="upload-btn">
-          <svg viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>
+          <svg viewBox="0 0 24 24">
+            <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z" />
+          </svg>
           选择文件
         </span>
       </label>
     </div>
     <div id="file-info" style="font-size:12px;color:#374151;line-height:1.8;"></div>
+  </div>
+
+  <!-- 第三方相册库 -->
+  <div class="card">
+    <h2>🖼️ 第三方相册库 (openPhotoAlbum)</h2>
+    <div class="form-label">选择 maxSelectable（最大可选择数量）</div>
+    <div class="btn-row">
+      <button class="success" onclick="openPhotoAlbum(9)">选 9 张</button>
+    </div>
+  </div>
+
+  <!-- 拍照/录像测试 -->
+  <div class="card">
+    <h2>📷 拍照/录像测试 (capture)</h2>
+    <div class="form-label">🟢 纯拍照（Android拍照 / iOS拍照）</div>
+    <div class="btn-row">
+      <label class="file-upload">
+        <input type="file" accept="image/*" capture="environment" onchange="handleFileSelect(event)" />
+        <span class="upload-btn">📸 拍照 image/*</span>
+      </label>
+      <label class="file-upload">
+        <input type="file" accept="image/jpg,image/jpeg,image/gif,image/png" capture="environment"
+          onchange="handleFileSelect(event)" />
+        <span class="upload-btn">📸 拍照 image/jpg...</span>
+      </label>
+    </div>
+    <div class="form-label">🔴 纯录像（Android录像 / iOS录像）</div>
+    <div class="btn-row">
+      <label class="file-upload">
+        <input type="file" accept="video/*" capture="environment" onchange="handleFileSelect(event)" />
+        <span class="upload-btn">🎥 录像 video/*</span>
+      </label>
+      <label class="file-upload">
+        <input type="file" accept="video/mp4,video/ogg,video/webm,video/mov" capture="environment"
+          onchange="handleFileSelect(event)" />
+        <span class="upload-btn">🎥 录像 video/mp4...</span>
+      </label>
+    </div>
+    <div class="form-label">🟡 混合类型（Android拍照 / iOS录像+拍照）</div>
+    <div class="btn-row">
+      <label class="file-upload">
+        <input type="file" accept="image/*,video/*" capture="environment" onchange="handleFileSelect(event)" />
+        <span class="upload-btn">🔄 混合 image/*,video/*</span>
+      </label>
+      <label class="file-upload">
+        <input type="file" accept="video/*,image/*" capture="environment" onchange="handleFileSelect(event)" />
+        <span class="upload-btn">🔄 混合 video/*,image/*</span>
+      </label>
+      <label class="file-upload">
+        <input type="file" accept="image/jpg,image/jpeg,image/gif,image/png,video/mp4,video/ogg,video/webm,video/mov"
+          capture="environment" onchange="handleFileSelect(event)" />
+        <span class="upload-btn">🔄 混合 image+video完整</span>
+      </label>
+      <label class="file-upload">
+        <input type="file" accept="image/*,video/mp4,video/ogg,video/webm,video/mov" capture="environment"
+          onchange="handleFileSelect(event)" />
+        <span class="upload-btn">🔄 混合 image/*+video/mp4...</span>
+      </label>
+      <label class="file-upload">
+        <input type="file" accept="video/mp4,video/ogg,video/webm,video/mov,image/*" capture="environment"
+          onchange="handleFileSelect(event)" />
+        <span class="upload-btn">🔄 混合 video...image/*</span>
+      </label>
+    </div>
   </div>
 
   <!-- 消息发送 -->
@@ -292,6 +358,15 @@
       var el = document.getElementById('log');
       el.innerHTML = '等待消息...';
       logCount = 0;
+    }
+
+    function openPhotoAlbum(maxSelectable) {
+      // 参数为 maxSelectable（最大可选择数量），比如最多选 9 张
+      if (window.UniWebView) {
+        window.UniWebView.openPhotoAlbum(maxSelectable);
+      } else {
+        console.error("当前不在 UniApp 原生基座 WebView 环境中");
+      }
     }
 
     // ========== 接收 WebView 消息 ==========
@@ -395,7 +470,7 @@
 
       var sizeStr = file.size < 1024 ? file.size + ' B' :
         file.size < 1024 * 1024 ? (file.size / 1024).toFixed(2) + ' KB' :
-        (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+          (file.size / (1024 * 1024)).toFixed(2) + ' MB';
 
       infoEl.innerHTML =
         '文件名：' + file.name + '<br>' +

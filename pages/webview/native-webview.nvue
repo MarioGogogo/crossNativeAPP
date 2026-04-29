@@ -1,16 +1,89 @@
 <template>
-  <view class="container">
+  <div class="container">
     <!-- 上半部分：WebView (固定高度) -->
-    <UniWebView
-      ref="webView"
-      class="webview"
-      :src="webUrl"
-      @onpagestart="onPageStart"
-      @onpagefinish="onPageFinish"
-      @onpageerror="onPageError"
-      @onjsmessage="onJsMessage"
-    ></UniWebView>
-  </view>
+    <div class="webview-container">
+      <UniWebView
+        ref="webView"
+        class="webview"
+        :src="webUrl"
+        @onpagestart="onPageStart"
+        @onpagefinish="onPageFinish"
+        @onpageerror="onPageError"
+        @onjsmessage="onJsMessage"
+        @onprogress="onProgress"
+      ></UniWebView>
+    </div>
+
+    <!-- 下半部分：控制按钮和日志 (可滚动) -->
+    <scroller class="control-panel" show-scrollbar="true">
+      <!-- 页面控制 -->
+      <div class="section">
+        <text class="section-title">页面控制</text>
+        <div class="btn-row">
+          <text class="btn btn-primary" @click="reload">刷新页面</text>
+          <text class="btn btn-secondary" @click="goBack">返回</text>
+          <text class="btn btn-secondary" @click="goForward">前进</text>
+        </div>
+      </div>
+
+      <!-- WebView 属性 -->
+      <div class="section">
+        <text class="section-title">获取属性</text>
+        <div class="btn-row">
+          <text class="btn btn-info" @click="getPageTitle">获取页面标题</text>
+          <text class="btn btn-info" @click="getPageUrl">获取当前 URL</text>
+          <text class="btn btn-info" @click="getProgress">获取加载进度</text>
+        </div>
+        <div class="info-box">
+          <text class="info-label">标题：</text>
+          <text class="info-value">{{ pageTitle || "-" }}</text>
+        </div>
+        <div class="info-box">
+          <text class="info-label">URL：</text>
+          <text class="info-value">{{ pageUrl || "-" }}</text>
+        </div>
+        <div class="info-box">
+          <text class="info-label">进度：</text>
+          <text class="info-value">{{ progress }}%</text>
+        </div>
+      </div>
+
+      <!-- H5 通信 -->
+      <div class="section">
+        <text class="section-title">H5 通信</text>
+        <div class="btn-row">
+          <text class="btn btn-success" @click="sendToH5">发送数据到 H5</text>
+          <text class="btn btn-success" @click="callH5Method"
+            >调用 H5 方法</text
+          >
+        </div>
+        <div class="input-group">
+          <input
+            class="input"
+            v-model="sendData"
+            placeholder="输入要发送的数据"
+          />
+        </div>
+      </div>
+
+      <!-- 日志区域 -->
+      <div class="section">
+        <div class="section-header">
+          <text class="section-title">日志</text>
+          <text class="btn btn-small btn-warning" @click="clearLog">清空</text>
+        </div>
+        <div class="log-container">
+          <div v-for="(log, index) in logs" :key="index" class="log-item">
+            <div class="log-row">
+              <text class="log-time">{{ log.time }}</text>
+              <!-- nvue 不继承父元素 color，颜色类必须直接绑到 <text> 上 -->
+              <text class="log-msg" :class="log.type">{{ log.msg }}</text>
+            </div>
+          </div>
+        </div>
+      </div>
+    </scroller>
+  </div>
 </template>
 
 <script>
@@ -18,26 +91,77 @@ export default {
   data() {
     return {
       webUrl: "/static/plus-bridge-test.html",
+      pageTitle: "",
+      pageUrl: "",
+      progress: 0,
+      sendData: "",
+      logs: [],
       cachedPayload: null,
     };
   },
+  onReady() {
+    this.addLog("系统", "页面已就绪");
+  },
   methods: {
-    addLog(data) {
-      console.log(data);
+    // 日志方法
+    addLog(type, msg) {
+      const now = new Date();
+      const time = `${String(now.getHours()).padStart(2, "0")}:${String(
+        now.getMinutes()
+      ).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
+      this.logs.unshift({
+        type: this.getLogType(type),
+        time,
+        msg: `[${type}] ${msg}`,
+      });
+      if (this.logs.length > 50) {
+        this.logs.pop();
+      }
+    },
+    getLogType(type) {
+      if (type === "系统") return "log-info";
+      if (type === "H5") return "log-out";
+      if (type === "Native") return "log-in";
+      if (type === "错误") return "log-error";
+      return "log-info";
+    },
+    clearLog() {
+      this.logs = [];
+      this.addLog("系统", "日志已清空");
+    },
+    onProgress(e) {
+      // res.progress 为 0 ~ 100 的整数
+      this.progress = e.detail.progress;
+      console.log("加载进度：" + e.detail.progress + "%");
     },
     // WebView 事件
     onPageStart(res) {
-      this.addLog(`页面开始加载`);
+      this.addLog("系统", `页面开始加载`);
+      this.pageUrl = res.url;
     },
     onPageFinish(res) {
-      this.addLog(`页面加载完成`);
+      this.addLog("系统", `页面加载完成`);
+      this.pageTitle = res.title;
+      this.progress = 100;
     },
     onPageError(res) {
-      this.addLog(`页面加载失败`);
+      this.addLog("错误", `页面加载失败`);
     },
     onJsMessage(e) {
       console.log("H5", `收到消息：${JSON.stringify(e.detail)}`);
-      const data = e.detail?.data?.[0] || e.detail;
+      this.addLog("H5", `收到消息：${JSON.stringify(e.detail?.data)}`);
+      // 兼容 iOS 与 Android 数据格式差异
+      // iOS: e.detail?.data 为 JSON 字符串，需先解析
+      // Android: e.detail?.data 或 e.detail 直接为对象
+      let data = e.detail?.data || e.detail;
+      if (typeof data === "string") {
+        try {
+          data = JSON.parse(data);
+        } catch (err) {
+          this.addLog("错误", `消息解析失败：${data}`);
+          return;
+        }
+      }
 
       if (!data?.type) return;
 
@@ -69,18 +193,285 @@ export default {
         }
       }
     },
+
+    // 页面控制
+    reload() {
+      const webview = this.$refs.webView;
+      if (webview && webview.reload) {
+        webview.reload();
+      }
+      this.addLog("系统", "刷新页面");
+    },
+    goBack() {
+      const webview = this.$refs.webView;
+      if (webview && webview.goBack) {
+        webview.goBack();
+      }
+      this.addLog("系统", "返回");
+    },
+    goForward() {
+      const webview = this.$refs.webView;
+      if (webview && webview.goForward) {
+        webview.goForward();
+      }
+      this.addLog("系统", "前进");
+    },
+
+    // 获取属性
+    getPageTitle() {
+      const webview = this.$refs.webView;
+      if (webview && webview.evaluateJavascript) {
+        webview.evaluateJavascript("document.title", (res) => {
+          this.pageTitle = res.result;
+          this.addLog("系统", `获取标题：${res.result}`);
+        });
+      }
+    },
+    getPageUrl() {
+      const webview = this.$refs.webView;
+      if (webview && webview.evaluateJavascript) {
+        webview.evaluateJavascript("location.href", (res) => {
+          this.pageUrl = res.result;
+          this.addLog("系统", `获取 URL: ${res.result}`);
+        });
+      }
+    },
+    getProgress() {
+      this.addLog("系统", `当前进度：${this.progress}%`);
+    },
+
+    // H5 通信
+    sendToH5(data) {
+      const payload = {
+        type: "nativeMessage",
+        data: this.sendData || "Hello from Native",
+        timestamp: new Date().toLocaleTimeString(),
+      };
+      const webview = this.$refs.webView;
+      if (webview && webview.evaluateJavascript) {
+        webview.evaluateJavascript(
+          `window.receiveFromUniApp(${JSON.stringify(payload)})`
+        );
+      }
+      this.addLog("Native", `发送数据：${JSON.stringify(payload.data)}`);
+      this.sendData = "";
+    },
+    callH5Method() {
+      const methodName = "updatePageTitle";
+      const param = `来自 Native 的标题 - ${new Date().toLocaleTimeString()}`;
+      const webview = this.$refs.webView;
+      if (webview && webview.evaluateJavascript) {
+        webview.evaluateJavascript(`${methodName}('${param}')`, (res) => {
+          this.addLog("Native", `调用结果：${JSON.stringify(res)}`);
+        });
+      }
+      this.addLog("Native", `调用 H5 方法：${methodName}`);
+      this.sendData = "";
+    },
   },
 };
 </script>
 
-<style>
+<style scoped>
 .container {
   flex: 1;
   flex-direction: column;
   background-color: #f5f7fa;
+  width: 750rpx;
+  height: 100%;
+}
+
+.webview-container {
+  width: 750rpx;
+  height: 800rpx;
+  background-color: #ffffff;
 }
 
 .webview {
+  width: 750rpx;
+  height: 800rpx;
+}
+
+.control-panel {
   flex: 1;
+  padding: 20rpx;
+  background-color: #f5f7fa;
+}
+
+.section {
+  background-color: #ffffff;
+  border-radius: 12rpx;
+  padding: 20rpx;
+  margin-bottom: 20rpx;
+}
+
+.section-header {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+
+.section-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #1e293b;
+  margin-bottom: 16rpx;
+}
+
+.btn-row {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding-left: 24rpx;
+  padding-right: 24rpx;
+  padding-top: 16rpx;
+  padding-bottom: 16rpx;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+  margin-right: 16rpx;
+  margin-bottom: 12rpx;
+  text-align: center;
+}
+
+.btn-small {
+  padding-left: 16rpx;
+  padding-right: 16rpx;
+  padding-top: 8rpx;
+  padding-bottom: 8rpx;
+  font-size: 22rpx;
+}
+
+.btn-primary {
+  background-color: #3b82f6;
+  color: #ffffff;
+}
+
+.btn-secondary {
+  background-color: #64748b;
+  color: #ffffff;
+}
+
+.btn-info {
+  background-color: #0ea5e9;
+  color: #ffffff;
+}
+
+.btn-success {
+  background-color: #10b981;
+  color: #ffffff;
+}
+
+.btn-warning {
+  background-color: #f59e0b;
+  color: #ffffff;
+}
+
+.info-box {
+  flex-direction: row;
+  padding-top: 12rpx;
+  padding-bottom: 12rpx;
+  border-bottom-width: 1rpx;
+  border-bottom-color: #e2e8f0;
+}
+
+.info-label {
+  font-size: 24rpx;
+  color: #64748b;
+  width: 140rpx;
+}
+
+.info-value {
+  font-size: 24rpx;
+  color: #1e293b;
+  flex: 1;
+}
+
+.input-group {
+  margin-top: 16rpx;
+
+  position: relative;
+}
+
+.input {
+  background-color: #f1f5f9;
+  border-width: 1rpx;
+  border-color: #e2e8f0;
+  border-radius: 8rpx;
+  padding-left: 16rpx;
+  padding-right: 16rpx;
+  height: 72rpx;
+  font-size: 24rpx;
+  color: #1e293b;
+}
+
+.hidden-input {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+}
+
+.log-container {
+  width: 710rpx;
+  height: 400rpx;
+  background-color: #ffffff;
+  border-radius: 8rpx;
+  padding: 20rpx;
+  border-width: 1rpx;
+  border-color: #e2e8f0;
+}
+
+.log-item {
+  flex-direction: column;
+  padding-top: 12rpx;
+  padding-bottom: 12rpx;
+  border-bottom-width: 1rpx;
+  border-bottom-color: #e2e8f0;
+}
+
+.log-row {
+  flex-direction: row;
+  /* nvue 不支持百分比宽度，100%会被忽略导致宽度为 0；改用 flex:1 占满父容器 */
+  flex: 1;
+}
+
+.log-time {
+  font-size: 24rpx;
+  color: #64748b;
+  width: 160rpx;
+  /* nvue 中 line-height 须为绝对单位，1.5 无效 */
+  line-height: 44rpx;
+}
+
+.log-msg {
+  flex: 1;
+  font-size: 28rpx;
+  font-weight: 500;
+  /* 移除固定 height，避免截断；line-height 须为绝对单位 */
+  line-height: 44rpx;
+  /* 默认颜色兑底：防止动态颜色类未生效时文字隱形 */
+  color: #334155;
+}
+
+.log-info {
+  color: #334155;
+}
+
+.log-out {
+  color: #059669;
+}
+
+.log-in {
+  color: #2563eb;
+}
+
+.log-error {
+  color: #dc2626;
+  font-weight: bold;
 }
 </style>
