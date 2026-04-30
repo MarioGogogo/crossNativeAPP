@@ -90,7 +90,7 @@
 export default {
   data() {
     return {
-      webUrl: "/static/plus-bridge-test.html",
+      webUrl: "",
       pageTitle: "",
       pageUrl: "",
       progress: 0,
@@ -98,6 +98,12 @@ export default {
       logs: [],
       cachedPayload: null,
     };
+  },
+  onLoad(option) {
+    const { url } = option;
+    if (url) {
+      this.webUrl = url;
+    }
   },
   onReady() {
     this.addLog("系统", "页面已就绪");

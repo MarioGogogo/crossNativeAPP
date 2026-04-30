@@ -3,6 +3,7 @@
     <view class="btn-group">
       <button class="btn btn-primary" @click="goNativeWebview">原生 WebView</button>
       <button class="btn btn-success" @click="goX5Webview">X5 WebView</button>
+      <button class="btn btn-wechat" @click="goWechatChat">X5 微信聊天</button>
     </view>
   </view>
 </template>
@@ -16,7 +17,13 @@ const goNativeWebview = () => {
 
 const goX5Webview = () => {
   uni.navigateTo({
-    url: '/pages/webview/x5-webview'
+    url: '/pages/webview/x5-webview?url=' + encodeURIComponent('/static/plus-bridge-test.html')
+  });
+};
+
+const goWechatChat = () => {
+  uni.navigateTo({
+    url: '/pages/webview/x5-wechat?url=' + encodeURIComponent('/static/wechat-chat.html')
   });
 };
 </script>
@@ -54,6 +61,10 @@ const goX5Webview = () => {
 
 .btn-success {
   background-color: #34c759;
+}
+
+.btn-wechat {
+  background-color: #07c160;
 }
 
 .btn::after {

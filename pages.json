@@ -24,6 +24,13 @@
 			"style": {
 				"navigationBarTitleText": "X5 WebView"
 			}
+		},
+		{
+			"path": "pages/webview/x5-wechat",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": ""
+			}
 		}
 	],
 	"globalStyle": {

@@ -99,6 +99,11 @@ export default {
       cachedPayload: null,
     };
   },
+  onLoad(options) {
+    if (options.url) {
+      this.webUrl = decodeURIComponent(options.url);
+    }
+  },
   onReady() {
     this.addLog("系统", "页面已就绪");
   },

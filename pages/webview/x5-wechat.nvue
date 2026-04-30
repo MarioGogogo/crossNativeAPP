@@ -1,0 +1,84 @@
+<template>
+	<div class="container">
+	    <X5WebView
+	      ref="webView"
+	      class="webview"
+	      :src="webUrl"
+	      @onpagestart="onPageStart"
+	      @onpagefinish="onPageFinish"
+	      @onpageerror="onPageError"
+	      @onjsmessage="onJsMessage"
+	      @onprogress="onProgress"
+	    ></X5WebView>
+	  </div>
+</template>
+
+<script>
+	export default {
+		data() {
+		  return {
+		    webUrl: "",
+		    pageTitle: "",
+		    pageUrl: "",
+		    progress: 0,
+		    sendData: "",
+		    logs: [],
+		    cachedPayload: null,
+		  };
+		},
+		onLoad(options) {
+		  if (options.url) {
+		    this.webUrl = decodeURIComponent(options.url);
+		  }
+		},
+		methods:{
+			addLog(data){
+				console.log(data)
+			},
+			// WebView 事件
+			onPageStart(res) {
+			  this.addLog("系统", `页面开始加载`);
+			  this.pageUrl = res.url;
+			},
+			onPageFinish(res) {
+			  this.addLog("系统", `页面加载完成`);
+			  this.pageTitle = res.title;
+			  this.progress = 100;
+			},
+			onPageError(res) {
+			  this.addLog("错误", `页面加载失败`);
+			},
+			onJsMessage(e) {
+			  console.log("H5", `收到消息：${JSON.stringify(e.detail)}`);
+		    },
+			onProgress(e) {
+			  // res.progress 为 0 ~ 100 的整数
+			  this.progress = e.detail.progress;
+			  console.log("加载进度：" + e.detail.progress + "%");
+			},
+		}
+		
+	}
+</script>
+
+<style>
+	.container {
+	  flex: 1;
+	  flex-direction: column;
+	  background-color: #f5f7fa;
+	  width: 750rpx;
+	  height: 100%;
+	}
+	
+	.webview-container {
+	  width: 750rpx;
+	  height: 800rpx;
+	  background-color: #ffffff;
+	}
+	
+	.webview {
+		  flex: 1;
+	}
+	
+
+</style>
