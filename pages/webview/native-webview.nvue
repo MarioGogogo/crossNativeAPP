@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <!-- 上半部分：WebView (固定高度) -->
-    <div class="webview-container">
+    <div class="webview-container" >
       <UniWebView
         ref="webView"
         class="webview"
@@ -99,12 +99,11 @@ export default {
       cachedPayload: null,
     };
   },
-  onLoad(option) {
-    const { url } = option;
-    if (url) {
-      this.webUrl = url;
-    }
-  },
+ onLoad(options) {
+   if (options.url) {
+     this.webUrl = decodeURIComponent(options.url);
+   }
+ },
   onReady() {
     this.addLog("系统", "页面已就绪");
   },

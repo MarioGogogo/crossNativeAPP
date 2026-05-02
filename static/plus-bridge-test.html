@@ -1,543 +1,691 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
-
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <title>WebView 通信测试</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    html,
-    body {
-      width: 100%;
-      min-height: 100%;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      padding: 12px;
-      background: #f5f7fa;
-      -webkit-overflow-scrolling: touch;
-    }
-
-    h1 {
-      font-size: 20px;
-      color: #1e293b;
-      margin-bottom: 12px;
-    }
-
-    h2 {
-      font-size: 16px;
-      color: #374151;
-      margin: 16px 0 8px;
-    }
-
-    .card {
-      background: #fff;
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 12px;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    button {
-      background: #3b82f6;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      padding: 8px 14px;
-      font-size: 13px;
-      cursor: pointer;
-      margin: 3px;
-      display: inline-block;
-    }
-
-    button:active {
-      opacity: 0.8;
-      transform: scale(0.98);
-    }
-
-    button.secondary {
-      background: #64748b;
-    }
-
-    button.success {
-      background: #10b981;
-    }
-
-    button.warning {
-      background: #f59e0b;
-    }
-
-    button.danger {
-      background: #ef4444;
-    }
-
-    .btn-row {
-      display: flex;
-      flex-wrap: wrap;
-      margin-bottom: 8px;
-    }
-
-    #log {
-      font-size: 15px;
-      line-height: 1.8;
-      max-height: 260px;
-      overflow-y: auto;
-      background: #ffffff;
-      color: #1e293b;
-      padding: 14px;
-      border-radius: 8px;
-      font-family: 'SF Mono', 'Menlo', 'Courier New', monospace;
-      -webkit-overflow-scrolling: touch;
-      border: 1px solid #e2e8f0;
-      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04);
-    }
-
-    .log-entry {
-      margin-bottom: 6px;
-      padding: 6px 8px;
-      border-radius: 6px;
-      background: #f8fafc;
-      border-left: 3px solid #cbd5e1;
-    }
-
-    .log-entry:last-child {
-      margin-bottom: 0;
-    }
-
-    .log-time {
-      color: #64748b;
-      font-size: 13px;
-      margin-right: 4px;
-    }
-
-    .log-out {
-      color: #059669;
-    }
-
-    .log-in {
-      color: #2563eb;
-    }
-
-    .log-error {
-      color: #dc2626;
-      font-weight: 600;
-    }
-
-    input,
-    select {
-      width: 100%;
-      padding: 8px 10px;
-      border: 1px solid #d1d5db;
-      border-radius: 6px;
-      font-size: 13px;
-      margin: 4px 0;
-    }
-
-    .form-group {
-      margin-bottom: 10px;
-    }
-
-    .form-label {
-      font-size: 12px;
-      color: #6b7280;
-      margin-bottom: 4px;
-      display: block;
-    }
-
-    .file-upload {
-      position: relative;
-      display: inline-block;
-      overflow: hidden;
-    }
-
-    .file-upload input[type="file"] {
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      opacity: 0;
-      cursor: pointer;
-      z-index: 2;
-    }
-
-    .file-upload .upload-btn {
-      background: #8b5cf6;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      padding: 8px 14px;
-      font-size: 13px;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: opacity 0.2s, transform 0.1s;
-      position: relative;
-      z-index: 1;
-    }
-
-    .file-upload .upload-btn:active {
-      opacity: 0.8;
-      transform: scale(0.98);
-    }
-
-    .file-upload .upload-btn svg {
-      width: 16px;
-      height: 16px;
-      fill: currentColor;
-    }
-  </style>
-</head>
-
-<body>
-
-  <h1>WebView 通信测试</h1>
-
-  <!-- 文件选择 -->
-  <div class="card">
-    <h2>📁 文件选择</h2>
-    <div class="form-group">
-      <label class="file-upload">
-        <input type="file" id="fileInput" onchange="handleFileSelect(event)" />
-        <span class="upload-btn">
-          <svg viewBox="0 0 24 24">
-            <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z" />
-          </svg>
-          选择文件
-        </span>
-      </label>
-    </div>
-    <div id="file-info" style="font-size:12px;color:#374151;line-height:1.8;"></div>
-  </div>
-
-  <!-- 第三方相册库 -->
-  <div class="card">
-    <h2>🖼️ 第三方相册库 (openPhotoAlbum)</h2>
-    <div class="form-label">选择 maxSelectable（最大可选择数量）</div>
-    <div class="btn-row">
-      <button class="success" onclick="openPhotoAlbum(9)">选 9 张</button>
-    </div>
-  </div>
-
-  <!-- 拍照/录像测试 -->
-  <div class="card">
-    <h2>📷 拍照/录像测试 (capture)</h2>
-    <div class="form-label">🟢 纯拍照（Android拍照 / iOS拍照）</div>
-    <div class="btn-row">
-      <label class="file-upload">
-        <input type="file" accept="image/*" capture="environment" onchange="handleFileSelect(event)" />
-        <span class="upload-btn">📸 拍照 image/*</span>
-      </label>
-      <label class="file-upload">
-        <input type="file" accept="image/jpg,image/jpeg,image/gif,image/png" capture="environment"
-          onchange="handleFileSelect(event)" />
-        <span class="upload-btn">📸 拍照 image/jpg...</span>
-      </label>
-    </div>
-    <div class="form-label">🔴 纯录像（Android录像 / iOS录像）</div>
-    <div class="btn-row">
-      <label class="file-upload">
-        <input type="file" accept="video/*" capture="environment" onchange="handleFileSelect(event)" />
-        <span class="upload-btn">🎥 录像 video/*</span>
-      </label>
-      <label class="file-upload">
-        <input type="file" accept="video/mp4,video/ogg,video/webm,video/mov" capture="environment"
-          onchange="handleFileSelect(event)" />
-        <span class="upload-btn">🎥 录像 video/mp4...</span>
-      </label>
-    </div>
-    <div class="form-label">🟡 混合类型（Android拍照 / iOS录像+拍照）</div>
-    <div class="btn-row">
-      <label class="file-upload">
-        <input type="file" accept="image/*,video/*" capture="environment" onchange="handleFileSelect(event)" />
-        <span class="upload-btn">🔄 混合 image/*,video/*</span>
-      </label>
-      <label class="file-upload">
-        <input type="file" accept="video/*,image/*" capture="environment" onchange="handleFileSelect(event)" />
-        <span class="upload-btn">🔄 混合 video/*,image/*</span>
-      </label>
-      <label class="file-upload">
-        <input type="file" accept="image/jpg,image/jpeg,image/gif,image/png,video/mp4,video/ogg,video/webm,video/mov"
-          capture="environment" onchange="handleFileSelect(event)" />
-        <span class="upload-btn">🔄 混合 image+video完整</span>
-      </label>
-      <label class="file-upload">
-        <input type="file" accept="image/*,video/mp4,video/ogg,video/webm,video/mov" capture="environment"
-          onchange="handleFileSelect(event)" />
-        <span class="upload-btn">🔄 混合 image/*+video/mp4...</span>
-      </label>
-      <label class="file-upload">
-        <input type="file" accept="video/mp4,video/ogg,video/webm,video/mov,image/*" capture="environment"
-          onchange="handleFileSelect(event)" />
-        <span class="upload-btn">🔄 混合 video...image/*</span>
-      </label>
-    </div>
-  </div>
-
-  <!-- 消息发送 -->
-  <div class="card">
-    <h2>📤 发送消息到原生</h2>
-    <div class="btn-row">
-      <button class="danger" onclick="sendCloseWebView()">退出 WebView</button>
-      <button class="warning" onclick="sendReload()">重新加载</button>
-      <button class="secondary" onclick="sendClearCache()">清除缓存</button>
-      <button onclick="sendGoBack()">返回上一页</button>
-    </div>
-    <div class="btn-row">
-      <button class="success" onclick="sendOnLoad()">页面就绪</button>
-      <button onclick="sendGetDeviceInfo()">获取设备信息</button>
-      <button onclick="sendCustomMessage()">自定义消息</button>
-    </div>
-  </div>
-
-  <!-- X5 内核信息 -->
-  <div class="card">
-    <h2>🌐 X5 内核信息</h2>
-    <div class="btn-row">
-      <button class="success" onclick="getX5Info()">获取 X5 版本</button>
-    </div>
-    <div id="x5-info" style="font-size:12px;color:#374151;line-height:1.8;padding:8px 0;">
-      点击按钮获取 X5 内核信息
-    </div>
-  </div>
-
-  <!-- 日志区域 -->
-  <div class="card">
-    <h2>📋 消息日志</h2>
-    <div id="log">等待消息...</div>
-    <div class="btn-row" style="margin-top: 8px;">
-      <button class="secondary" onclick="clearLog()">清空日志</button>
-    </div>
-  </div>
-  <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
-  <script>
-    // VConsole 默认会挂载到 `window.VConsole` 上
-    var vConsole = new window.VConsole();
-  </script>
-  <script>
-
-    var logCount = 0;
-
-    // ========== 日志函数 ==========
-    function log(msg, type) {
-      var el = document.getElementById('log');
-      var time = new Date().toLocaleTimeString();
-      var className = '';
-      if (type === 'out') className = 'log-out';
-      else if (type === 'in') className = 'log-in';
-      else if (type === 'error') className = 'log-error';
-
-      var html = '<div class="log-entry">' +
-        '<span class="log-time">[' + time + ']</span> ' +
-        '<span class="' + className + '">' + msg + '</span>' +
-        '</div>' + el.innerHTML;
-
-      el.innerHTML = html;
-      logCount++;
-      if (logCount > 50) {
-        el.innerHTML = el.innerHTML.substring(0, el.innerHTML.lastIndexOf('<div class="log-entry">'));
-      }
-    }
-
-    function logOut(msg) { log('→ ' + msg, 'out'); }
-    function logIn(msg) { log('← ' + msg, 'in'); }
-    function logError(msg) { log('✕ ' + msg, 'error'); }
-
-    function clearLog() {
-      var el = document.getElementById('log');
-      el.innerHTML = '等待消息...';
-      logCount = 0;
-    }
-
-    function openPhotoAlbum(maxSelectable) {
-      // 参数为 maxSelectable（最大可选择数量），比如最多选 9 张
-      if (window.UniWebView) {
-        window.UniWebView.openPhotoAlbum(maxSelectable);
-      } else {
-        console.error("当前不在 UniApp 原生基座 WebView 环境中");
-      }
-    }
-
-    // ========== 接收 WebView 消息 ==========
-    window.updatePageTitle = function (title) {
-      document.title = title;
-      logIn('uniapp调用h5的方法: ' + JSON.stringify(title));
-      return '标题已更新';
-    };
-    window.receiveFromUniApp = function (data) {
-      logIn('receiveFromUniApp: ' + JSON.stringify(data));
-    };
-
-    // ========== 发送消息到 WebView (原生交互) ==========
-    function sendToApp(payload) {
-      var msgStr = typeof payload === 'string' ? payload : JSON.stringify(payload);
-      logOut(msgStr);
-
-      // 方式 1: UniWebView JS Bridge
-      if (window.UniWebView && typeof window.UniWebView.postMessage === 'function') {
-        window.UniWebView.postMessage(msgStr);
-        log('  → UniWebView.postMessage');
-        return;
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <title>WebView 通信测试</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
       }
 
-      // 方式 2: sendToUniApp 函数 (原生注入)
-      if (typeof window.sendToUniApp === 'function') {
-        window.sendToUniApp(msgStr);
-        log('  → sendToUniApp');
-        return;
+      html,
+      body {
+        width: 100%;
+        min-height: 100%;
       }
 
-      logError('无法发送：WebView 通信接口不可用');
-    }
-
-    // 调用 WebView 方法
-    function callUniAppHandler(handlerName, params) {
-      var dataStr = typeof params === 'string' ? params : JSON.stringify(params);
-      logOut('callHandler[' + handlerName + ']: ' + dataStr);
-
-      if (window.UniWebView && typeof window.UniWebView.callHandler === 'function') {
-        window.UniWebView.callHandler(handlerName, dataStr);
-        log('  → UniWebView.callHandler');
-        return;
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        padding: 12px;
+        background: #f5f7fa;
+        -webkit-overflow-scrolling: touch;
       }
 
-      // 降级：通过 postMessage 模拟
-      if (window.UniWebView && typeof window.UniWebView.postMessage === 'function') {
-        window.UniWebView.postMessage(JSON.stringify({
-          type: 'callHandler',
-          handler: handlerName,
-          data: params
-        }));
-        log('  → postMessage 模拟');
-        return;
+      h1 {
+        font-size: 20px;
+        color: #1e293b;
+        margin-bottom: 12px;
       }
 
-      logError('无法调用：WebView 通信接口不可用');
-    }
-
-    // 业务发送函数
-    function sendOnLoad() {
-      sendToApp({ type: 'ONLOAD', page: document.title, url: location.href });
-    }
-
-    function sendCloseWebView() {
-      sendToApp({ type: 'closeWebView' });
-    }
-
-    function sendReload() {
-      sendToApp({ type: 'reload' });
-    }
-
-    function sendClearCache() {
-      sendToApp({ type: 'clearCache' });
-    }
-
-    function sendGoBack() {
-      sendToApp({ type: 'goBack' });
-    }
-
-    function sendGetDeviceInfo() {
-      callUniAppHandler('getDeviceInfo', {});
-    }
-
-    function sendCustomMessage() {
-      var msg = prompt('请输入要发送的消息内容：');
-      if (msg !== null && msg.trim() !== '') {
-        sendToApp({ type: 'custom', data: msg.trim() });
-      }
-    }
-
-    // ========== 文件选择 ==========
-    function handleFileSelect(event) {
-      var file = event.target.files[0];
-      var infoEl = document.getElementById('file-info');
-
-      if (!file) {
-        infoEl.innerHTML = '';
-        return;
+      h2 {
+        font-size: 16px;
+        color: #374151;
+        margin: 16px 0 8px;
       }
 
-      var sizeStr = file.size < 1024 ? file.size + ' B' :
-        file.size < 1024 * 1024 ? (file.size / 1024).toFixed(2) + ' KB' :
-          (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+      .card {
+        background: #fff;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 12px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+      }
 
-      infoEl.innerHTML =
-        '文件名：' + file.name + '<br>' +
-        '类型：' + (file.type || '未知') + '<br>' +
-        '大小：' + sizeStr;
+      button {
+        background: #3b82f6;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 8px 14px;
+        font-size: 13px;
+        cursor: pointer;
+        margin: 3px;
+        display: inline-block;
+      }
 
-      logIn('选择文件：' + file.name + ' (' + sizeStr + ')');
+      button:active {
+        opacity: 0.8;
+        transform: scale(0.98);
+      }
 
-      // 读取为 Base64 并发送
-      var reader = new FileReader();
-      reader.onload = function (e) {
-        var base64 = e.target.result.split(',')[1];
-        sendToApp({
-          type: 'fileSelected',
-          data: {
-            name: file.name,
-            type: file.type,
-            size: file.size,
-            base64: base64
-          }
-        });
-        logOut('文件 Base64 已发送（长度：' + base64.length + '）');
+      button.secondary {
+        background: #64748b;
+      }
+
+      button.success {
+        background: #10b981;
+      }
+
+      button.warning {
+        background: #f59e0b;
+      }
+
+      button.danger {
+        background: #ef4444;
+      }
+
+      .btn-row {
+        display: flex;
+        flex-wrap: wrap;
+        margin-bottom: 8px;
+      }
+
+      #log {
+        font-size: 15px;
+        line-height: 1.8;
+        max-height: 260px;
+        overflow-y: auto;
+        background: #ffffff;
+        color: #1e293b;
+        padding: 14px;
+        border-radius: 8px;
+        font-family: "SF Mono", "Menlo", "Courier New", monospace;
+        -webkit-overflow-scrolling: touch;
+        border: 1px solid #e2e8f0;
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04);
+      }
+
+      .log-entry {
+        margin-bottom: 6px;
+        padding: 6px 8px;
+        border-radius: 6px;
+        background: #f8fafc;
+        border-left: 3px solid #cbd5e1;
+      }
+
+      .log-entry:last-child {
+        margin-bottom: 0;
+      }
+
+      .log-time {
+        color: #64748b;
+        font-size: 13px;
+        margin-right: 4px;
+      }
+
+      .log-out {
+        color: #059669;
+      }
+
+      .log-in {
+        color: #2563eb;
+      }
+
+      .log-error {
+        color: #dc2626;
+        font-weight: 600;
+      }
+
+      input,
+      select {
+        width: 100%;
+        padding: 8px 10px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 13px;
+        margin: 4px 0;
+      }
+
+      .form-group {
+        margin-bottom: 10px;
+      }
+
+      .form-label {
+        font-size: 12px;
+        color: #6b7280;
+        margin-bottom: 4px;
+        display: block;
+      }
+
+      .file-upload {
+        position: relative;
+        display: inline-block;
+        overflow: hidden;
+      }
+
+      .file-upload input[type="file"] {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+        z-index: 2;
+      }
+
+      .file-upload .upload-btn {
+        background: #8b5cf6;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 8px 14px;
+        font-size: 13px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition:
+          opacity 0.2s,
+          transform 0.1s;
+        position: relative;
+        z-index: 1;
+      }
+
+      .file-upload .upload-btn:active {
+        opacity: 0.8;
+        transform: scale(0.98);
+      }
+
+      .file-upload .upload-btn svg {
+        width: 16px;
+        height: 16px;
+        fill: currentColor;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>WebView 通信测试</h1>
+
+    <!-- 文件选择 -->
+    <div class="card">
+      <h2>📁 文件选择</h2>
+      <div class="form-group">
+        <label class="file-upload">
+          <input
+            type="file"
+            id="fileInput"
+            onchange="handleFileSelect(event)"
+          />
+          <span class="upload-btn">
+            <svg viewBox="0 0 24 24">
+              <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z" />
+            </svg>
+            选择文件
+          </span>
+        </label>
+      </div>
+      <div
+        id="file-info"
+        style="font-size: 12px; color: #374151; line-height: 1.8"
+      ></div>
+    </div>
+
+    <!-- 第三方相册库 -->
+    <div class="card">
+      <h2>🖼️ 第三方相册库 (openPhotoAlbum)</h2>
+      <div class="form-label">选择 maxSelectable（最大可选择数量）</div>
+      <div class="btn-row">
+        <button class="success" onclick="openPhotoAlbum(9)">选 9 张</button>
+      </div>
+    </div>
+
+    <!-- 拍照/录像测试 -->
+    <div class="card">
+      <h2>📷 拍照/录像测试 (capture)</h2>
+      <div class="form-label">🟢 纯拍照（Android拍照 / iOS拍照）</div>
+      <div class="btn-row">
+        <label class="file-upload">
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onchange="handleFileSelect(event)"
+          />
+          <span class="upload-btn">📸 拍照 image/*</span>
+        </label>
+        <label class="file-upload">
+          <input
+            type="file"
+            accept="image/jpg,image/jpeg,image/gif,image/png"
+            capture="environment"
+            onchange="handleFileSelect(event)"
+          />
+          <span class="upload-btn">📸 拍照 image/jpg...</span>
+        </label>
+      </div>
+      <div class="form-label">🔴 纯录像（Android录像 / iOS录像）</div>
+      <div class="btn-row">
+        <label class="file-upload">
+          <input
+            type="file"
+            accept="video/*"
+            capture="environment"
+            onchange="handleFileSelect(event)"
+          />
+          <span class="upload-btn">🎥 录像 video/*</span>
+        </label>
+        <label class="file-upload">
+          <input
+            type="file"
+            accept="video/mp4,video/ogg,video/webm,video/mov"
+            capture="environment"
+            onchange="handleFileSelect(event)"
+          />
+          <span class="upload-btn">🎥 录像 video/mp4...</span>
+        </label>
+      </div>
+      <div class="form-label">🟡 混合类型（Android拍照 / iOS录像+拍照）</div>
+      <div class="btn-row">
+        <label class="file-upload">
+          <input
+            type="file"
+            accept="image/*,video/*"
+            capture="environment"
+            onchange="handleFileSelect(event)"
+          />
+          <span class="upload-btn">🔄 混合 image/*,video/*</span>
+        </label>
+        <label class="file-upload">
+          <input
+            type="file"
+            accept="video/*,image/*"
+            capture="environment"
+            onchange="handleFileSelect(event)"
+          />
+          <span class="upload-btn">🔄 混合 video/*,image/*</span>
+        </label>
+        <label class="file-upload">
+          <input
+            type="file"
+            accept="image/jpg,image/jpeg,image/gif,image/png,video/mp4,video/ogg,video/webm,video/mov"
+            capture="environment"
+            onchange="handleFileSelect(event)"
+          />
+          <span class="upload-btn">🔄 混合 image+video完整</span>
+        </label>
+        <label class="file-upload">
+          <input
+            type="file"
+            accept="image/*,video/mp4,video/ogg,video/webm,video/mov"
+            capture="environment"
+            onchange="handleFileSelect(event)"
+          />
+          <span class="upload-btn">🔄 混合 image/*+video/mp4...</span>
+        </label>
+        <label class="file-upload">
+          <input
+            type="file"
+            accept="video/mp4,video/ogg,video/webm,video/mov,image/*"
+            capture="environment"
+            onchange="handleFileSelect(event)"
+          />
+          <span class="upload-btn">🔄 混合 video...image/*</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- 消息发送 -->
+    <div class="card">
+      <h2>📤 发送消息到原生</h2>
+      <div class="btn-row">
+        <button class="danger" onclick="sendCloseWebView()">
+          退出 WebView
+        </button>
+        <button class="warning" onclick="sendReload()">重新加载</button>
+        <button class="secondary" onclick="sendClearCache()">清除缓存</button>
+        <button onclick="sendGoBack()">返回上一页</button>
+      </div>
+      <div class="btn-row">
+        <button class="success" onclick="sendOnLoad()">页面就绪</button>
+        <button onclick="sendGetDeviceInfo()">获取设备信息</button>
+        <button onclick="sendCustomMessage()">自定义消息</button>
+      </div>
+    </div>
+
+    <!-- X5 内核信息 -->
+    <div class="card">
+      <h2>🌐 X5 内核信息</h2>
+      <div class="btn-row">
+        <button class="success" onclick="getX5Info()">获取 X5 版本</button>
+      </div>
+      <div
+        id="x5-info"
+        style="
+          font-size: 12px;
+          color: #374151;
+          line-height: 1.8;
+          padding: 8px 0;
+        "
+      >
+        点击按钮获取 X5 内核信息
+      </div>
+    </div>
+
+    <!-- 日志区域 -->
+    <div class="card">
+      <h2>📋 消息日志</h2>
+      <div id="log">等待消息...</div>
+      <div class="btn-row" style="margin-top: 8px">
+        <button class="secondary" onclick="clearLog()">清空日志</button>
+      </div>
+    </div>
+    <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
+    <script>
+      // VConsole 默认会挂载到 `window.VConsole` 上
+      var vConsole = new window.VConsole();
+    </script>
+    <script>
+      var logCount = 0;
+
+      // ========== 日志函数 ==========
+      function log(msg, type) {
+        var el = document.getElementById("log");
+        var time = new Date().toLocaleTimeString();
+        var className = "";
+        if (type === "out") className = "log-out";
+        else if (type === "in") className = "log-in";
+        else if (type === "error") className = "log-error";
+
+        var html =
+          '<div class="log-entry">' +
+          '<span class="log-time">[' +
+          time +
+          "]</span> " +
+          '<span class="' +
+          className +
+          '">' +
+          msg +
+          "</span>" +
+          "</div>" +
+          el.innerHTML;
+
+        el.innerHTML = html;
+        logCount++;
+        if (logCount > 50) {
+          el.innerHTML = el.innerHTML.substring(
+            0,
+            el.innerHTML.lastIndexOf('<div class="log-entry">'),
+          );
+        }
+      }
+
+      function logOut(msg) {
+        log("→ " + msg, "out");
+      }
+      function logIn(msg) {
+        log("← " + msg, "in");
+      }
+      function logError(msg) {
+        log("✕ " + msg, "error");
+      }
+
+      function clearLog() {
+        var el = document.getElementById("log");
+        el.innerHTML = "等待消息...";
+        logCount = 0;
+      }
+
+      function openPhotoAlbum(maxSelectable) {
+        // 参数为 maxSelectable（最大可选择数量），比如最多选 9 张
+        if (window.UniWebView) {
+          window.UniWebView.openPhotoAlbum(maxSelectable);
+        } else {
+          console.error("当前不在 UniApp 原生基座 WebView 环境中");
+        }
+      }
+
+      // ========== 接收 WebView 消息 ==========
+      window.updatePageTitle = function (title) {
+        document.title = title;
+        logIn("uniapp调用h5的方法: " + JSON.stringify(title));
+        return "标题已更新";
       };
-      reader.onerror = function () {
-        logError('文件读取失败');
+      window.receiveFromUniApp = function (data) {
+        logIn("receiveFromUniApp: " + JSON.stringify(data));
       };
-      reader.readAsDataURL(file);
-    }
 
-    // ========== X5 内核信息 ==========
-    function getX5Info() {
-      var infoEl = document.getElementById('x5-info');
-      try {
-        if (!window.UniWebView || typeof window.UniWebView.getX5Version !== 'function') {
-          infoEl.innerHTML = '<span style="color:#ef4444;">UniWebView.getX5Version 接口不可用</span>';
-          logError('UniWebView.getX5Version 接口不可用');
+      // ========== 发送消息到 WebView (原生交互) ==========
+      function sendToApp(payload) {
+        var msgStr =
+          typeof payload === "string" ? payload : JSON.stringify(payload);
+        logOut(msgStr);
+
+        // 方式 1: UniWebView JS Bridge
+        if (
+          window.UniWebView &&
+          typeof window.UniWebView.postMessage === "function"
+        ) {
+          window.UniWebView.postMessage(msgStr);
+          log("  → UniWebView.postMessage");
           return;
         }
 
-        // 同步获取 X5 版本信息
-        var x5Info = JSON.parse(window.UniWebView.getX5Version());
+        // 方式 2: sendToUniApp 函数 (原生注入)
+        if (typeof window.sendToUniApp === "function") {
+          window.sendToUniApp(msgStr);
+          log("  → sendToUniApp");
+          return;
+        }
 
-        var html =
-          '是否使用 X5 内核：<b style="color:' + (x5Info.isX5 ? '#10b981' : '#ef4444') + ';">' + x5Info.isX5 + '</b><br>' +
-          'X5 版本号 (version)：<b>' + x5Info.version + '</b><br>' +
-          'SDK 版本号 (sdkVersion)：<b>' + x5Info.sdkVersion + '</b><br>' +
-          '是否支持视频播放：<b>' + x5Info.canSupportVideo + '</b>';
-        infoEl.innerHTML = html;
-        logIn('X5 内核信息：' + JSON.stringify(x5Info));
-      } catch (e) {
-        infoEl.innerHTML = '<span style="color:#ef4444;">获取失败：' + e.message + '</span>';
-        logError('getX5Version 异常：' + e.message);
+        logError("无法发送：WebView 通信接口不可用");
       }
-    }
 
-    // ========== 页面加载初始化 ==========
-    log('页面加载完成，可通过 sendToApp 或 callUniAppHandler 与 WebView 通信');
+      // 调用 WebView 方法
+      function callUniAppHandler(handlerName, params) {
+        var dataStr =
+          typeof params === "string" ? params : JSON.stringify(params);
+        logOut("callHandler[" + handlerName + "]: " + dataStr);
 
-    // 自动发送 ONLOAD 消息
-    sendOnLoad();
+        if (
+          window.UniWebView &&
+          typeof window.UniWebView.callHandler === "function"
+        ) {
+          window.UniWebView.callHandler(handlerName, dataStr);
+          log("  → UniWebView.callHandler");
+          return;
+        }
 
-    // 监听自定义事件
-    window.addEventListener('uniapp-message', function (e) {
-      logIn('uniapp-message 事件：' + JSON.stringify(e.detail));
-    });
-  </script>
+        // 降级：通过 postMessage 模拟
+        if (
+          window.UniWebView &&
+          typeof window.UniWebView.postMessage === "function"
+        ) {
+          window.UniWebView.postMessage(
+            JSON.stringify({
+              type: "callHandler",
+              handler: handlerName,
+              data: params,
+            }),
+          );
+          log("  → postMessage 模拟");
+          return;
+        }
 
-</body>
+        logError("无法调用：WebView 通信接口不可用");
+      }
 
+      // 业务发送函数
+      function sendOnLoad() {
+        sendToApp({ type: "ONLOAD", page: document.title, url: location.href });
+      }
+
+      function sendCloseWebView() {
+        sendToApp({ type: "closeWebView" });
+      }
+
+      function sendReload() {
+        sendToApp({ type: "reload" });
+      }
+
+      function sendClearCache() {
+        sendToApp({ type: "clearCache" });
+      }
+
+      function sendGoBack() {
+        sendToApp({ type: "goBack" });
+      }
+
+      function sendGetDeviceInfo() {
+        callUniAppHandler("getDeviceInfo", {});
+      }
+
+      function sendCustomMessage() {
+        var msg = prompt("请输入要发送的消息内容：");
+        if (msg !== null && msg.trim() !== "") {
+          sendToApp({ type: "custom", data: msg.trim() });
+        }
+      }
+
+      // ========== 文件选择 ==========
+      function handleFileSelect(event) {
+        var file = event.target.files[0];
+        var infoEl = document.getElementById("file-info");
+
+        if (!file) {
+          infoEl.innerHTML = "";
+          return;
+        }
+
+        var sizeStr =
+          file.size < 1024
+            ? file.size + " B"
+            : file.size < 1024 * 1024
+              ? (file.size / 1024).toFixed(2) + " KB"
+              : (file.size / (1024 * 1024)).toFixed(2) + " MB";
+
+        infoEl.innerHTML =
+          "文件名：" +
+          file.name +
+          "<br>" +
+          "类型：" +
+          (file.type || "未知") +
+          "<br>" +
+          "大小：" +
+          sizeStr;
+
+        logIn("选择文件：" + file.name + " (" + sizeStr + ")");
+
+        // 读取为 Base64 并发送
+        var reader = new FileReader();
+        reader.onload = function (e) {
+          var base64 = e.target.result.split(",")[1];
+          sendToApp({
+            type: "fileSelected",
+            data: {
+              name: file.name,
+              type: file.type,
+              size: file.size,
+              base64: base64,
+            },
+          });
+          logOut("文件 Base64 已发送（长度：" + base64.length + "）");
+        };
+        reader.onerror = function () {
+          logError("文件读取失败");
+        };
+        reader.readAsDataURL(file);
+      }
+
+      // ========== X5 内核信息 ==========
+      function getX5Info() {
+        var infoEl = document.getElementById("x5-info");
+        try {
+          if (
+            !window.UniWebView ||
+            typeof window.UniWebView.getX5Version !== "function"
+          ) {
+            infoEl.innerHTML =
+              '<span style="color:#ef4444;">UniWebView.getX5Version 接口不可用</span>';
+            logError("UniWebView.getX5Version 接口不可用");
+            return;
+          }
+
+          // 同步获取 X5 版本信息
+          var x5Info = JSON.parse(window.UniWebView.getX5Version());
+
+          var html =
+            '是否使用 X5 内核：<b style="color:' +
+            (x5Info.isX5 ? "#10b981" : "#ef4444") +
+            ';">' +
+            x5Info.isX5 +
+            "</b><br>" +
+            "X5 版本号 (version)：<b>" +
+            x5Info.version +
+            "</b><br>" +
+            "SDK 版本号 (sdkVersion)：<b>" +
+            x5Info.sdkVersion +
+            "</b><br>" +
+            "是否支持视频播放：<b>" +
+            x5Info.canSupportVideo +
+            "</b>";
+          infoEl.innerHTML = html;
+          logIn("X5 内核信息：" + JSON.stringify(x5Info));
+        } catch (e) {
+          infoEl.innerHTML =
+            '<span style="color:#ef4444;">获取失败：' + e.message + "</span>";
+          logError("getX5Version 异常：" + e.message);
+        }
+      }
+
+      // ========== 页面加载初始化 ==========
+      log(
+        "页面加载完成，可通过 sendToApp 或 callUniAppHandler 与 WebView 通信",
+      );
+
+      // 自动发送 ONLOAD 消息
+      sendOnLoad();
+
+      // 监听自定义事件
+      window.addEventListener("uniapp-message", function (e) {
+        logIn("uniapp-message 事件：" + JSON.stringify(e.detail));
+      });
+
+      // ========== 状态栏高度 ==========
+      function getStatusBarHeight() {
+        var infoEl = document.getElementById("status-bar-info");
+        try {
+          if (
+            !window.UniWebView ||
+            typeof window.UniWebView.getStatusBarHeight !== "function"
+          ) {
+            infoEl.innerHTML =
+              '<span style="color:#ef4444;">UniWebView.getStatusBarHeight 接口不可用</span>';
+            logError("UniWebView.getStatusBarHeight 接口不可用");
+            return;
+          }
+
+          // 调用原生方法
+          var heightInfo = JSON.parse(window.UniWebView.getStatusBarHeight());
+
+          var html =
+            '状态栏高度(px): <b style="color: #10b981">' +
+            heightInfo.px +
+            "</b><br>" +
+            '状态栏高度(dp): <b style="color: #10b981">' +
+            heightInfo.dp +
+            "</b>";
+          infoEl.innerHTML = html;
+          logIn("状态栏高度: " + JSON.stringify(heightInfo));
+        } catch (e) {
+          infoEl.innerHTML =
+            '<span style="color:#ef4444;">获取失败：' + e.message + "</span>";
+          logError("getStatusBarHeight 异常：" + e.message);
+        }
+      }
+    </script>
+  </body>
 </html>

@@ -11,7 +11,7 @@
 <script setup>
 const goNativeWebview = () => {
   uni.navigateTo({
-    url: '/pages/webview/native-webview'
+    url: '/pages/webview/native-webview?url=' + encodeURIComponent('/static/plus-bridge-test.html')
   });
 };
 
